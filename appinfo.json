@@ -1,0 +1,10 @@
+{
+  "id": "com.quran.radio.cairo",
+  "version": "1.0.0",
+  "vendor": "Quran Radio",
+  "type": "web",
+  "main": "index.html",
+  "title": "Quran Radio Cairo",
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png"
+}

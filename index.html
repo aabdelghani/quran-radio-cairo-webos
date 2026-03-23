@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Quran Radio Cairo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #0a1628 0%, #1a2a4a 50%, #0a1628 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            color: #fff;
+        }
+        .container {
+            text-align: center;
+        }
+        .title {
+            font-size: 48px;
+            margin-bottom: 12px;
+            color: #d4af37;
+            direction: rtl;
+        }
+        .subtitle {
+            font-size: 24px;
+            color: #8899aa;
+            margin-bottom: 60px;
+        }
+        .play-btn {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            border: 4px solid #d4af37;
+            background: rgba(212, 175, 55, 0.1);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 40px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+        .play-btn:hover, .play-btn:focus {
+            background: rgba(212, 175, 55, 0.25);
+            transform: scale(1.08);
+            box-shadow: 0 0 40px rgba(212, 175, 55, 0.3);
+        }
+        .play-btn.playing {
+            border-color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+            animation: pulse 2s infinite;
+        }
+        .play-btn.playing:hover, .play-btn.playing:focus {
+            background: rgba(231, 76, 60, 0.25);
+            box-shadow: 0 0 40px rgba(231, 76, 60, 0.3);
+        }
+        .icon-play, .icon-stop {
+            width: 0;
+            height: 0;
+        }
+        .icon-play {
+            border-top: 40px solid transparent;
+            border-bottom: 40px solid transparent;
+            border-left: 65px solid #d4af37;
+            margin-left: 12px;
+        }
+        .icon-stop {
+            width: 60px;
+            height: 60px;
+            background: #e74c3c;
+            border: none;
+            border-radius: 8px;
+        }
+        .status {
+            font-size: 22px;
+            color: #6688aa;
+            min-height: 30px;
+        }
+        .status.live {
+            color: #4ecdc4;
+        }
+        .now-playing {
+            margin-top: 30px;
+            direction: rtl;
+            min-height: 80px;
+        }
+        .now-label {
+            font-size: 16px;
+            color: #4ecdc4;
+            margin-bottom: 8px;
+        }
+        .now-title {
+            font-size: 28px;
+            color: #d4af37;
+        }
+        .now-desc {
+            font-size: 16px;
+            color: #8899aa;
+            margin-top: 6px;
+        }
+        .now-time {
+            font-size: 14px;
+            color: #556677;
+            margin-top: 4px;
+            direction: ltr;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(231, 76, 60, 0.2); }
+            50% { box-shadow: 0 0 50px rgba(231, 76, 60, 0.4); }
+        }
+    </style>
+</head>
+<body>
+    <script src="webOSTVjs-1.2.10/webOSTV.js" charset="utf-8"></script>
+    <script src="webOSTVjs-1.2.10/webOSTV-dev.js" charset="utf-8"></script>
+    <script src="hls.min.js"></script>
+
+    <div class="container">
+        <div class="title">إذاعة القرآن الكريم من القاهرة</div>
+        <div class="subtitle">Holy Quran Radio - Cairo</div>
+        <button class="play-btn" id="playBtn" autofocus>
+            <div class="icon-play" id="btnIcon"></div>
+        </button>
+        <div class="status" id="status">Press to play</div>
+        <div class="now-playing" id="nowPlaying"></div>
+    </div>
+
+    <script>
+        var STREAM_URL = 'https://service.webvideocore.net/CL1olYogIrDWvwqiIKK7eCxOS4PStqG9DuEjAr2ZjZQtvS3d4y9r0cvRhvS17SGN/a_7a4vuubc6mo8.m3u8';
+        var FALLBACK_URL = 'https://stream.zeno.fm/tv0x28xvyc9uv';
+        var audio = document.createElement('audio');
+        var hls = null;
+        var playing = false;
+        var btn = document.getElementById('playBtn');
+        var icon = document.getElementById('btnIcon');
+        var statusEl = document.getElementById('status');
+
+        audio.addEventListener('playing', function() {
+            statusEl.textContent = 'Live';
+            statusEl.className = 'status live';
+        });
+        audio.addEventListener('waiting', function() {
+            statusEl.textContent = 'Buffering...';
+            statusEl.className = 'status';
+        });
+        audio.addEventListener('error', function() {
+            statusEl.textContent = 'Error - tap to retry';
+            statusEl.className = 'status';
+            stopPlayback();
+        });
+
+        function stopPlayback() {
+            if (hls) { hls.destroy(); hls = null; }
+            audio.pause();
+            audio.src = '';
+            playing = false;
+            btn.classList.remove('playing');
+            icon.className = 'icon-play';
+        }
+
+        function startPlayback(url) {
+            statusEl.textContent = 'Connecting...';
+            statusEl.className = 'status';
+            playing = true;
+            btn.classList.add('playing');
+            icon.className = 'icon-stop';
+
+            if (url.indexOf('.m3u8') !== -1 && Hls.isSupported()) {
+                hls = new Hls();
+                hls.loadSource(url);
+                hls.attachMedia(audio);
+                hls.on(Hls.Events.MANIFEST_PARSED, function() { audio.play(); });
+                hls.on(Hls.Events.ERROR, function(event, data) {
+                    if (data.fatal) {
+                        stopPlayback();
+                        // Try fallback
+                        if (url !== FALLBACK_URL) {
+                            startPlayback(FALLBACK_URL);
+                        } else {
+                            statusEl.textContent = 'Error - tap to retry';
+                        }
+                    }
+                });
+            } else {
+                audio.src = url;
+                audio.play();
+            }
+        }
+
+        function toggle() {
+            if (playing) {
+                stopPlayback();
+                statusEl.textContent = 'Press to play';
+                statusEl.className = 'status';
+            } else {
+                startPlayback(STREAM_URL);
+            }
+        }
+
+        btn.addEventListener('click', toggle);
+
+        // TV remote support
+        document.addEventListener('keydown', function(e) {
+            if (e.keyCode === 13) { // Enter/OK
+                toggle();
+            }
+        });
+
+        // Now Playing - fetch schedule from misrquran.gov.eg
+        var nowPlayingEl = document.getElementById('nowPlaying');
+        var SCHEDULE_API = 'https://API.misrquran.gov.eg/api/RadioProgrammeSchedule/GetByDay';
+
+        function parseTime(timeStr, dayStr) {
+            // timeStr like "01:30 AM", dayStr like "2026-03-23T00:00:00"
+            var match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+            if (!match) return null;
+            var h = parseInt(match[1]);
+            var m = parseInt(match[2]);
+            var ampm = match[3].toUpperCase();
+            if (ampm === 'PM' && h !== 12) h += 12;
+            if (ampm === 'AM' && h === 12) h = 0;
+            var d = new Date(dayStr);
+            d.setHours(h, m, 0, 0);
+            return d;
+        }
+
+        function fetchNowPlaying() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', SCHEDULE_API, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    var resp = JSON.parse(xhr.responseText);
+                    var programs = resp.data || [];
+                    var now = new Date();
+                    // Adjust to Cairo time (UTC+2)
+                    var cairoOffset = 2 * 60;
+                    var localOffset = now.getTimezoneOffset();
+                    var cairoNow = new Date(now.getTime() + (cairoOffset + localOffset) * 60000);
+
+                    var current = null;
+                    for (var i = 0; i < programs.length; i++) {
+                        var from = parseTime(programs[i].fromTime, programs[i].day);
+                        var to = parseTime(programs[i].toTime, programs[i].day);
+                        if (from && to) {
+                            // Handle overnight programs
+                            if (to < from) to.setDate(to.getDate() + 1);
+                            if (cairoNow >= from && cairoNow < to) {
+                                current = programs[i];
+                                break;
+                            }
+                        }
+                    }
+
+                    if (current) {
+                        nowPlayingEl.innerHTML =
+                            '<div class="now-label">يعرض الآن</div>' +
+                            '<div class="now-title">' + current.title + '</div>' +
+                            '<div class="now-desc">' + current.description + '</div>' +
+                            '<div class="now-time">' + current.fromTime + ' - ' + current.toTime + '</div>';
+                    } else {
+                        nowPlayingEl.innerHTML = '';
+                    }
+                }
+            };
+            xhr.send(JSON.stringify({Date: null}));
+        }
+
+        fetchNowPlaying();
+        setInterval(fetchNowPlaying, 60000); // refresh every minute
+    </script>
+</body>
+</html>
