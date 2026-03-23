@@ -9,30 +9,115 @@
             width: 100vw;
             height: 100vh;
             background: linear-gradient(135deg, #0a1628 0%, #1a2a4a 50%, #0a1628 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
             font-family: 'Arial', sans-serif;
             overflow: hidden;
             color: #fff;
+            display: flex;
         }
-        .container {
+        /* Left panel - schedule */
+        .schedule-panel {
+            width: 45%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid rgba(212, 175, 55, 0.15);
+        }
+        .schedule-header {
+            padding: 30px 30px 15px;
+            direction: rtl;
+            font-size: 28px;
+            color: #d4af37;
+            flex-shrink: 0;
+        }
+        .schedule-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 20px 30px;
+            direction: rtl;
+        }
+        .schedule-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        .schedule-list::-webkit-scrollbar-thumb {
+            background: rgba(212, 175, 55, 0.3);
+            border-radius: 2px;
+        }
+        .schedule-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-bottom: 6px;
+            transition: background 0.2s;
+            gap: 14px;
+        }
+        .schedule-item:hover, .schedule-item:focus {
+            background: rgba(255, 255, 255, 0.05);
+            outline: none;
+        }
+        .schedule-item.active {
+            background: rgba(78, 205, 196, 0.1);
+            border: 1px solid rgba(78, 205, 196, 0.25);
+        }
+        .schedule-item .time {
+            font-size: 13px;
+            color: #556677;
+            min-width: 110px;
+            direction: ltr;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .schedule-item.active .time {
+            color: #4ecdc4;
+        }
+        .schedule-item .prog-title {
+            font-size: 18px;
+            color: #ccc;
+            flex: 1;
+        }
+        .schedule-item.active .prog-title {
+            color: #d4af37;
+            font-weight: bold;
+        }
+        .schedule-item .live-badge {
+            font-size: 11px;
+            color: #fff;
+            background: #4ecdc4;
+            padding: 2px 8px;
+            border-radius: 4px;
+            flex-shrink: 0;
+            display: none;
+        }
+        .schedule-item.active .live-badge {
+            display: inline-block;
+        }
+
+        /* Right panel - player */
+        .player-panel {
+            width: 55%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .player-container {
             text-align: center;
         }
         .title {
-            font-size: 48px;
-            margin-bottom: 12px;
+            font-size: 44px;
+            margin-bottom: 10px;
             color: #d4af37;
             direction: rtl;
         }
         .subtitle {
-            font-size: 24px;
+            font-size: 22px;
             color: #8899aa;
-            margin-bottom: 60px;
+            margin-bottom: 40px;
         }
         .play-btn {
-            width: 180px;
-            height: 180px;
+            width: 140px;
+            height: 140px;
             border-radius: 50%;
             border: 4px solid #d4af37;
             background: rgba(212, 175, 55, 0.1);
@@ -40,7 +125,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 40px;
+            margin: 0 auto 25px;
             transition: all 0.3s ease;
             outline: none;
         }
@@ -58,56 +143,105 @@
             background: rgba(231, 76, 60, 0.25);
             box-shadow: 0 0 40px rgba(231, 76, 60, 0.3);
         }
-        .icon-play, .icon-stop {
-            width: 0;
-            height: 0;
-        }
         .icon-play {
-            border-top: 40px solid transparent;
-            border-bottom: 40px solid transparent;
-            border-left: 65px solid #d4af37;
-            margin-left: 12px;
+            width: 0; height: 0;
+            border-top: 30px solid transparent;
+            border-bottom: 30px solid transparent;
+            border-left: 50px solid #d4af37;
+            margin-left: 10px;
         }
         .icon-stop {
-            width: 60px;
-            height: 60px;
+            width: 48px; height: 48px;
             background: #e74c3c;
-            border: none;
             border-radius: 8px;
         }
         .status {
-            font-size: 22px;
+            font-size: 18px;
             color: #6688aa;
-            min-height: 30px;
+            min-height: 24px;
         }
-        .status.live {
-            color: #4ecdc4;
-        }
+        .status.live { color: #4ecdc4; }
         .now-playing {
-            margin-top: 30px;
+            margin-top: 20px;
             direction: rtl;
-            min-height: 80px;
+            min-height: 60px;
         }
         .now-label {
-            font-size: 16px;
+            font-size: 14px;
             color: #4ecdc4;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
         }
         .now-title {
-            font-size: 28px;
+            font-size: 22px;
             color: #d4af37;
         }
         .now-desc {
-            font-size: 16px;
+            font-size: 14px;
             color: #8899aa;
-            margin-top: 6px;
+            margin-top: 4px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
         }
         .now-time {
-            font-size: 14px;
+            font-size: 12px;
             color: #556677;
-            margin-top: 4px;
+            margin-top: 3px;
             direction: ltr;
         }
+
+        /* Prayer times */
+        .prayer-section {
+            margin-top: 30px;
+            width: 100%;
+            max-width: 520px;
+        }
+        .prayer-header {
+            direction: rtl;
+            font-size: 18px;
+            color: #d4af37;
+            margin-bottom: 10px;
+        }
+        .prayer-hijri {
+            direction: rtl;
+            font-size: 13px;
+            color: #8899aa;
+            margin-bottom: 12px;
+        }
+        .prayer-grid {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .prayer-item {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(212, 175, 55, 0.12);
+            border-radius: 10px;
+            padding: 10px 14px;
+            text-align: center;
+            min-width: 75px;
+            transition: all 0.3s;
+        }
+        .prayer-item.next {
+            border-color: rgba(78, 205, 196, 0.4);
+            background: rgba(78, 205, 196, 0.08);
+        }
+        .prayer-name {
+            font-size: 13px;
+            color: #8899aa;
+            margin-bottom: 4px;
+            direction: rtl;
+        }
+        .prayer-item.next .prayer-name {
+            color: #4ecdc4;
+        }
+        .prayer-time-val {
+            font-size: 16px;
+            color: #d4af37;
+            direction: ltr;
+        }
+
         @keyframes pulse {
             0%, 100% { box-shadow: 0 0 20px rgba(231, 76, 60, 0.2); }
             50% { box-shadow: 0 0 50px rgba(231, 76, 60, 0.4); }
@@ -119,14 +253,28 @@
     <script src="webOSTVjs-1.2.10/webOSTV-dev.js" charset="utf-8"></script>
     <script src="hls.min.js"></script>
 
-    <div class="container">
-        <div class="title">إذاعة القرآن الكريم من القاهرة</div>
-        <div class="subtitle">Holy Quran Radio - Cairo</div>
-        <button class="play-btn" id="playBtn" autofocus>
-            <div class="icon-play" id="btnIcon"></div>
-        </button>
-        <div class="status" id="status">Press to play</div>
-        <div class="now-playing" id="nowPlaying"></div>
+    <!-- Left: Schedule -->
+    <div class="schedule-panel">
+        <div class="schedule-header">فقرات اليوم</div>
+        <div class="schedule-list" id="scheduleList"></div>
+    </div>
+
+    <!-- Right: Player -->
+    <div class="player-panel">
+        <div class="player-container">
+            <div class="title">إذاعة القرآن الكريم من القاهرة</div>
+            <div class="subtitle">Holy Quran Radio - Cairo</div>
+            <button class="play-btn" id="playBtn" autofocus>
+                <div class="icon-play" id="btnIcon"></div>
+            </button>
+            <div class="status" id="status">Press to play</div>
+            <div class="now-playing" id="nowPlaying"></div>
+        </div>
+        <div class="prayer-section">
+            <div class="prayer-header">مواقيت الصلاة</div>
+            <div class="prayer-hijri" id="hijriDate"></div>
+            <div class="prayer-grid" id="prayerGrid"></div>
+        </div>
     </div>
 
     <script>
@@ -177,7 +325,6 @@
                 hls.on(Hls.Events.ERROR, function(event, data) {
                     if (data.fatal) {
                         stopPlayback();
-                        // Try fallback
                         if (url !== FALLBACK_URL) {
                             startPlayback(FALLBACK_URL);
                         } else {
@@ -210,12 +357,12 @@
             }
         });
 
-        // Now Playing - fetch schedule from misrquran.gov.eg
+        // Schedule
         var nowPlayingEl = document.getElementById('nowPlaying');
+        var scheduleListEl = document.getElementById('scheduleList');
         var SCHEDULE_API = 'https://API.misrquran.gov.eg/api/RadioProgrammeSchedule/GetByDay';
 
         function parseTime(timeStr, dayStr) {
-            // timeStr like "01:30 AM", dayStr like "2026-03-23T00:00:00"
             var match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
             if (!match) return null;
             var h = parseInt(match[1]);
@@ -228,7 +375,14 @@
             return d;
         }
 
-        function fetchNowPlaying() {
+        function getCairoNow() {
+            var now = new Date();
+            var cairoOffset = 2 * 60;
+            var localOffset = now.getTimezoneOffset();
+            return new Date(now.getTime() + (cairoOffset + localOffset) * 60000);
+        }
+
+        function fetchSchedule() {
             var xhr = new XMLHttpRequest();
             xhr.open('POST', SCHEDULE_API, true);
             xhr.setRequestHeader('Content-Type', 'application/json');
@@ -236,32 +390,46 @@
                 if (xhr.status === 200) {
                     var resp = JSON.parse(xhr.responseText);
                     var programs = resp.data || [];
-                    var now = new Date();
-                    // Adjust to Cairo time (UTC+2)
-                    var cairoOffset = 2 * 60;
-                    var localOffset = now.getTimezoneOffset();
-                    var cairoNow = new Date(now.getTime() + (cairoOffset + localOffset) * 60000);
+                    var cairoNow = getCairoNow();
+                    var currentProgram = null;
+                    var scheduleHtml = '';
 
-                    var current = null;
                     for (var i = 0; i < programs.length; i++) {
-                        var from = parseTime(programs[i].fromTime, programs[i].day);
-                        var to = parseTime(programs[i].toTime, programs[i].day);
+                        var p = programs[i];
+                        var from = parseTime(p.fromTime, p.day);
+                        var to = parseTime(p.toTime, p.day);
+                        var isCurrent = false;
+
                         if (from && to) {
-                            // Handle overnight programs
                             if (to < from) to.setDate(to.getDate() + 1);
                             if (cairoNow >= from && cairoNow < to) {
-                                current = programs[i];
-                                break;
+                                isCurrent = true;
+                                currentProgram = p;
                             }
                         }
+
+                        scheduleHtml +=
+                            '<div class="schedule-item' + (isCurrent ? ' active' : '') + '"' +
+                            (isCurrent ? ' id="currentProgram"' : '') + '>' +
+                            '<span class="time">' + p.fromTime + ' - ' + p.toTime + '</span>' +
+                            '<span class="prog-title">' + p.title + '</span>' +
+                            '<span class="live-badge">الآن</span>' +
+                            '</div>';
                     }
 
-                    if (current) {
+                    scheduleListEl.innerHTML = scheduleHtml;
+
+                    var currentEl = document.getElementById('currentProgram');
+                    if (currentEl) {
+                        currentEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                    }
+
+                    if (currentProgram) {
                         nowPlayingEl.innerHTML =
                             '<div class="now-label">يعرض الآن</div>' +
-                            '<div class="now-title">' + current.title + '</div>' +
-                            '<div class="now-desc">' + current.description + '</div>' +
-                            '<div class="now-time">' + current.fromTime + ' - ' + current.toTime + '</div>';
+                            '<div class="now-title">' + currentProgram.title + '</div>' +
+                            '<div class="now-desc">' + currentProgram.description + '</div>' +
+                            '<div class="now-time">' + currentProgram.fromTime + ' - ' + currentProgram.toTime + '</div>';
                     } else {
                         nowPlayingEl.innerHTML = '';
                     }
@@ -270,8 +438,175 @@
             xhr.send(JSON.stringify({Date: null}));
         }
 
-        fetchNowPlaying();
-        setInterval(fetchNowPlaying, 60000); // refresh every minute
+        fetchSchedule();
+        setInterval(fetchSchedule, 60000);
+
+        // Prayer Times
+        var PRAYER_API = 'https://API.misrquran.gov.eg/api/PrayerTimes/GetTodaysTimes?lat=30.0444&lng=31.2357&dayLightSaving=false';
+        var prayerGridEl = document.getElementById('prayerGrid');
+        var hijriDateEl = document.getElementById('hijriDate');
+
+        var prayerNames = [
+            { key: 'fajr', name: 'الفجر' },
+            { key: 'sunrise', name: 'الشروق' },
+            { key: 'dhuhr', name: 'الظهر' },
+            { key: 'asr', name: 'العصر' },
+            { key: 'maghrib', name: 'المغرب' },
+            { key: 'isha', name: 'العشاء' }
+        ];
+
+        function formatPrayerTime(utcTime) {
+            // API returns UTC time like "02:29:00", convert to Cairo (UTC+2)
+            var parts = utcTime.split(':');
+            var h = (parseInt(parts[0]) + 2) % 24;
+            var m = parts[1];
+            var ampm = h >= 12 ? 'PM' : 'AM';
+            var h12 = h % 12 || 12;
+            return h12 + ':' + m + ' ' + ampm;
+        }
+
+        function getNextPrayer(data) {
+            var cairoNow = getCairoNow();
+            var cairoMinutes = cairoNow.getHours() * 60 + cairoNow.getMinutes();
+
+            for (var i = 0; i < prayerNames.length; i++) {
+                var key = prayerNames[i].key;
+                if (!data[key]) continue;
+                var parts = data[key].split(':');
+                var h = (parseInt(parts[0]) + 2) % 24;
+                var prayerMinutes = h * 60 + parseInt(parts[1]);
+                if (prayerMinutes > cairoMinutes) return key;
+            }
+            return 'fajr'; // after isha, next is fajr
+        }
+
+        function fetchPrayerTimes() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', PRAYER_API, true);
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    var data = JSON.parse(xhr.responseText);
+
+                    if (data.hijriDate) {
+                        hijriDateEl.textContent = data.hijriDate;
+                    }
+
+                    var nextPrayer = getNextPrayer(data);
+                    var html = '';
+                    for (var i = 0; i < prayerNames.length; i++) {
+                        var p = prayerNames[i];
+                        var timeVal = data[p.key] ? formatPrayerTime(data[p.key]) : '--';
+                        var isNext = p.key === nextPrayer;
+                        html += '<div class="prayer-item' + (isNext ? ' next' : '') + '">' +
+                            '<div class="prayer-name">' + p.name + '</div>' +
+                            '<div class="prayer-time-val">' + timeVal + '</div>' +
+                            '</div>';
+                    }
+                    prayerGridEl.innerHTML = html;
+                }
+            };
+            xhr.send();
+        }
+
+        fetchPrayerTimes();
+        setInterval(fetchPrayerTimes, 300000); // refresh every 5 min
+
+        // Azan player
+        var azanAudio = new Audio('azan.mp3');
+        var azanPlaying = false;
+        var wasPlayingBeforeAzan = false;
+        var azanTriggered = {}; // track which prayers already triggered today
+        // Azan prayers (not sunrise - no azan for sunrise)
+        var azanPrayers = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+        var cachedPrayerData = null;
+
+        azanAudio.addEventListener('ended', function() {
+            azanPlaying = false;
+            statusEl.textContent = playing ? 'Live' : 'Press to play';
+            statusEl.className = playing ? 'status live' : 'status';
+            // Resume radio if it was playing before azan
+            if (wasPlayingBeforeAzan) {
+                startPlayback(STREAM_URL);
+            }
+        });
+
+        function playAzan() {
+            azanPlaying = true;
+            wasPlayingBeforeAzan = playing;
+            // Pause radio stream
+            if (playing) {
+                if (hls) { hls.destroy(); hls = null; }
+                audio.pause();
+                audio.src = '';
+            }
+            statusEl.textContent = 'الأذان';
+            statusEl.className = 'status live';
+            azanAudio.currentTime = 0;
+            azanAudio.play();
+        }
+
+        function checkAzanTime() {
+            if (!cachedPrayerData || azanPlaying) return;
+            var cairoNow = getCairoNow();
+            var cairoH = cairoNow.getHours();
+            var cairoM = cairoNow.getMinutes();
+            var todayKey = cairoNow.toDateString();
+
+            // Reset triggered list on new day
+            if (azanTriggered._day !== todayKey) {
+                azanTriggered = { _day: todayKey };
+            }
+
+            for (var i = 0; i < azanPrayers.length; i++) {
+                var key = azanPrayers[i];
+                if (azanTriggered[key]) continue;
+                var utcTime = cachedPrayerData[key];
+                if (!utcTime) continue;
+                var parts = utcTime.split(':');
+                var pH = (parseInt(parts[0]) + 2) % 24;
+                var pM = parseInt(parts[1]);
+                if (cairoH === pH && cairoM === pM) {
+                    azanTriggered[key] = true;
+                    playAzan();
+                    break;
+                }
+            }
+        }
+
+        // Override fetchPrayerTimes to cache data for azan check
+        var origFetchPrayer = fetchPrayerTimes;
+        fetchPrayerTimes = function() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', PRAYER_API, true);
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    var data = JSON.parse(xhr.responseText);
+                    cachedPrayerData = data;
+
+                    if (data.hijriDate) {
+                        hijriDateEl.textContent = data.hijriDate;
+                    }
+
+                    var nextPrayer = getNextPrayer(data);
+                    var html = '';
+                    for (var i = 0; i < prayerNames.length; i++) {
+                        var p = prayerNames[i];
+                        var timeVal = data[p.key] ? formatPrayerTime(data[p.key]) : '--';
+                        var isNext = p.key === nextPrayer;
+                        html += '<div class="prayer-item' + (isNext ? ' next' : '') + '">' +
+                            '<div class="prayer-name">' + p.name + '</div>' +
+                            '<div class="prayer-time-val">' + timeVal + '</div>' +
+                            '</div>';
+                    }
+                    prayerGridEl.innerHTML = html;
+                }
+            };
+            xhr.send();
+        };
+        fetchPrayerTimes();
+
+        // Check every 30 seconds for azan time
+        setInterval(checkAzanTime, 30000);
     </script>
 </body>
 </html>
