@@ -161,34 +161,6 @@
             min-height: 24px;
         }
         .status.live { color: #4ecdc4; }
-        .now-playing {
-            margin-top: 20px;
-            direction: rtl;
-            min-height: 60px;
-        }
-        .now-label {
-            font-size: 18px;
-            color: #4ecdc4;
-            margin-bottom: 5px;
-        }
-        .now-title {
-            font-size: 28px;
-            color: #d4af37;
-        }
-        .now-desc {
-            font-size: 18px;
-            color: #8899aa;
-            margin-top: 4px;
-            max-width: 500px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .now-time {
-            font-size: 16px;
-            color: #556677;
-            margin-top: 3px;
-            direction: ltr;
-        }
 
         /* Prayer times */
         .prayer-section {
@@ -289,13 +261,12 @@
     <!-- Right: Player -->
     <div class="player-panel">
         <div class="player-container">
-            <div class="title">إذاعة القرآن الكريم من القاهرة</div>
-            <div class="subtitle">Holy Quran Radio - Cairo</div>
+            <div class="title" id="mainTitle">إذاعة القرآن الكريم من القاهرة</div>
+            <div class="subtitle" id="mainSubtitle">Holy Quran Radio - Cairo</div>
             <button class="play-btn" id="playBtn" autofocus>
                 <div class="icon-play" id="btnIcon"></div>
             </button>
             <div class="status" id="status">Press to play</div>
-            <div class="now-playing" id="nowPlaying"></div>
         </div>
         <div class="prayer-section">
             <div class="prayer-header">مواقيت الصلاة</div>
@@ -307,6 +278,10 @@
             <div class="prayer-grid" id="prayerGrid"></div>
         </div>
     </div>
+    <div style="position:fixed;bottom:8px;left:20px;right:20px;font-size:12px;color:#445566;direction:rtl;display:flex;justify-content:space-between">
+        <span>هذا التطبيق غير رسمي ولا يمثل إذاعة القرآن الكريم المصرية. جميع الحقوق محفوظة لإذاعة القرآن الكريم المصرية © ٢٠٢٦</span>
+        <span style="direction:ltr">Not affiliated with misrquran.gov.eg</span>
+    </div>
 
     <script>
         var STREAM_URL = 'https://service.webvideocore.net/CL1olYogIrDWvwqiIKK7eCxOS4PStqG9DuEjAr2ZjZQtvS3d4y9r0cvRhvS17SGN/a_7a4vuubc6mo8.m3u8';
@@ -314,6 +289,7 @@
         var audio = document.createElement('audio');
         var hls = null;
         var playing = false;
+        var stoppingManually = false;
         var btn = document.getElementById('playBtn');
         var icon = document.getElementById('btnIcon');
         var statusEl = document.getElementById('status');
@@ -327,18 +303,21 @@
             statusEl.className = 'status';
         });
         audio.addEventListener('error', function() {
+            if (stoppingManually) return;
             statusEl.textContent = 'Error - tap to retry';
             statusEl.className = 'status';
             stopPlayback();
         });
 
         function stopPlayback() {
+            stoppingManually = true;
             if (hls) { hls.destroy(); hls = null; }
             audio.pause();
             audio.src = '';
             playing = false;
             btn.classList.remove('playing');
             icon.className = 'icon-play';
+            setTimeout(function() { stoppingManually = false; }, 100);
         }
 
         function startPlayback(url) {
@@ -389,21 +368,18 @@
         });
 
         // Schedule
-        var nowPlayingEl = document.getElementById('nowPlaying');
         var scheduleListEl = document.getElementById('scheduleList');
         var SCHEDULE_API = 'https://API.misrquran.gov.eg/api/RadioProgrammeSchedule/GetByDay';
 
-        function parseTime(timeStr, dayStr) {
+        function parseTimeToMinutes(timeStr) {
             var match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
-            if (!match) return null;
+            if (!match) return -1;
             var h = parseInt(match[1]);
             var m = parseInt(match[2]);
             var ampm = match[3].toUpperCase();
             if (ampm === 'PM' && h !== 12) h += 12;
             if (ampm === 'AM' && h === 12) h = 0;
-            var d = new Date(dayStr);
-            d.setHours(h, m, 0, 0);
-            return d;
+            return h * 60 + m;
         }
 
         function getCairoNow() {
@@ -411,6 +387,11 @@
             var cairoOffset = 2 * 60;
             var localOffset = now.getTimezoneOffset();
             return new Date(now.getTime() + (cairoOffset + localOffset) * 60000);
+        }
+
+        function getCairoMinutesNow() {
+            var cn = getCairoNow();
+            return cn.getHours() * 60 + cn.getMinutes();
         }
 
         function fetchSchedule() {
@@ -421,22 +402,24 @@
                 if (xhr.status === 200) {
                     var resp = JSON.parse(xhr.responseText);
                     var programs = resp.data || [];
-                    var cairoNow = getCairoNow();
+                    var nowMins = getCairoMinutesNow();
                     var currentProgram = null;
                     var scheduleHtml = '';
 
                     for (var i = 0; i < programs.length; i++) {
                         var p = programs[i];
-                        var from = parseTime(p.fromTime, p.day);
-                        var to = parseTime(p.toTime, p.day);
+                        var fromMins = parseTimeToMinutes(p.fromTime);
+                        var toMins = parseTimeToMinutes(p.toTime);
                         var isCurrent = false;
 
-                        if (from && to) {
-                            if (to < from) to.setDate(to.getDate() + 1);
-                            if (cairoNow >= from && cairoNow < to) {
-                                isCurrent = true;
-                                currentProgram = p;
+                        if (fromMins >= 0 && toMins >= 0) {
+                            if (toMins <= fromMins) {
+                                // Overnight: e.g. 11PM - 1AM
+                                isCurrent = (nowMins >= fromMins || nowMins < toMins);
+                            } else {
+                                isCurrent = (nowMins >= fromMins && nowMins < toMins);
                             }
+                            if (isCurrent) currentProgram = p;
                         }
 
                         scheduleHtml +=
@@ -455,14 +438,14 @@
                         currentEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
                     }
 
+                    var mainTitle = document.getElementById('mainTitle');
+                    var mainSubtitle = document.getElementById('mainSubtitle');
                     if (currentProgram) {
-                        nowPlayingEl.innerHTML =
-                            '<div class="now-label">يعرض الآن</div>' +
-                            '<div class="now-title">' + currentProgram.title + '</div>' +
-                            '<div class="now-desc">' + currentProgram.description + '</div>' +
-                            '<div class="now-time">' + currentProgram.fromTime + ' - ' + currentProgram.toTime + '</div>';
+                        mainTitle.innerHTML = '<span style="font-size:26px;color:#4ecdc4;display:block;margin-bottom:8px">يعرض الآن</span>' + currentProgram.title;
+                        mainSubtitle.textContent = currentProgram.fromTime + ' - ' + currentProgram.toTime;
                     } else {
-                        nowPlayingEl.innerHTML = '';
+                        mainTitle.textContent = 'إذاعة القرآن الكريم من القاهرة';
+                        mainSubtitle.textContent = 'Holy Quran Radio - Cairo';
                     }
                 }
             };
@@ -492,38 +475,34 @@
             { key: 'isha', name: 'العشاء' }
         ];
 
-        function formatPrayerTime(utcTime, utcOffset) {
-            var parts = utcTime.split(':');
-            var h = (parseInt(parts[0]) + utcOffset + 24) % 24;
+        // Format "HH:MM" (24h) to "H:MM AM/PM"
+        function formatTo12h(time24) {
+            var parts = time24.split(':');
+            var h = parseInt(parts[0]);
             var m = parts[1];
             var ampm = h >= 12 ? 'PM' : 'AM';
             var h12 = h % 12 || 12;
             return h12 + ':' + m + ' ' + ampm;
         }
 
-        function getLocalNow(utcOffset) {
-            var now = new Date();
-            var localOffset = now.getTimezoneOffset();
-            return new Date(now.getTime() + (utcOffset * 60 + localOffset) * 60000);
-        }
-
         function getNextPrayer(data) {
-            var localNow = getLocalNow(currentLocation.utcOffset);
-            var localMinutes = localNow.getHours() * 60 + localNow.getMinutes();
+            var now = new Date();
+            var nowMinutes;
+            if (useMyLocation) {
+                nowMinutes = now.getHours() * 60 + now.getMinutes();
+            } else {
+                var cn = getCairoNow();
+                nowMinutes = cn.getHours() * 60 + cn.getMinutes();
+            }
 
             for (var i = 0; i < prayerNames.length; i++) {
                 var key = prayerNames[i].key;
                 if (!data[key]) continue;
                 var parts = data[key].split(':');
-                var h = (parseInt(parts[0]) + currentLocation.utcOffset + 24) % 24;
-                var prayerMinutes = h * 60 + parseInt(parts[1]);
-                if (prayerMinutes > localMinutes) return key;
+                var prayerMinutes = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+                if (prayerMinutes > nowMinutes) return key;
             }
             return 'fajr';
-        }
-
-        function getPrayerApiUrl() {
-            return PRAYER_API_BASE + '?lat=' + currentLocation.lat + '&lng=' + currentLocation.lng + '&dayLightSaving=false';
         }
 
         // Reverse geocode to get city name
@@ -546,14 +525,9 @@
             xhr.send();
         }
 
-        // Detect timezone offset from coordinates
-        function getUtcOffsetForCoords(lat, lng) {
-            // Rough estimate: 1 hour per 15 degrees longitude, rounded
-            var offset = Math.round(lng / 15);
-            // DST approximation for Europe (March-October)
-            var month = new Date().getMonth();
-            if (lat > 40 && month >= 2 && month <= 9) offset += 1;
-            return offset;
+        function getLocalUtcOffset() {
+            // Use the browser's actual timezone offset (accounts for DST)
+            return -(new Date().getTimezoneOffset()) / 60;
         }
 
         locationBtn.addEventListener('click', function() {
@@ -575,7 +549,7 @@
                         var lng = pos.coords.longitude;
                         currentLocation.lat = lat;
                         currentLocation.lng = lng;
-                        currentLocation.utcOffset = getUtcOffsetForCoords(lat, lng);
+                        currentLocation.utcOffset = getLocalUtcOffset();
                         currentLocation.name = 'موقعي';
                         locationNameEl.textContent = currentLocation.name;
                         locationBtn.textContent = 'القاهرة';
@@ -636,10 +610,16 @@
 
         function checkAzanTime() {
             if (!cachedPrayerData || azanPlaying) return;
-            var localNow = getLocalNow(currentLocation.utcOffset);
-            var localH = localNow.getHours();
-            var localM = localNow.getMinutes();
-            var todayKey = localNow.toDateString();
+            // For Cairo use Cairo time, for my location use local time
+            var now;
+            if (useMyLocation) {
+                now = new Date();
+            } else {
+                now = getCairoNow();
+            }
+            var nowH = now.getHours();
+            var nowM = now.getMinutes();
+            var todayKey = now.toDateString();
 
             if (azanTriggered._day !== todayKey) {
                 azanTriggered = { _day: todayKey };
@@ -648,12 +628,12 @@
             for (var i = 0; i < azanPrayers.length; i++) {
                 var key = azanPrayers[i];
                 if (azanTriggered[key]) continue;
-                var utcTime = cachedPrayerData[key];
-                if (!utcTime) continue;
-                var parts = utcTime.split(':');
-                var pH = (parseInt(parts[0]) + currentLocation.utcOffset + 24) % 24;
+                var timeStr = cachedPrayerData[key];
+                if (!timeStr) continue;
+                var parts = timeStr.split(':');
+                var pH = parseInt(parts[0]);
                 var pM = parseInt(parts[1]);
-                if (localH === pH && localM === pM) {
+                if (nowH === pH && nowM === pM) {
                     azanTriggered[key] = true;
                     playAzan();
                     break;
@@ -661,33 +641,75 @@
             }
         }
 
+        // Normalize misrquran UTC times to Cairo local 24h "HH:MM"
+        function misrqToLocal(utcTime) {
+            var parts = utcTime.split(':');
+            var h = (parseInt(parts[0]) + 2 + 24) % 24;
+            var m = parts[1];
+            return (h < 10 ? '0' : '') + h + ':' + m;
+        }
+
         function fetchPrayerTimes() {
             var xhr = new XMLHttpRequest();
-            xhr.open('GET', getPrayerApiUrl(), true);
-            xhr.onload = function() {
-                if (xhr.status === 200) {
-                    var data = JSON.parse(xhr.responseText);
-                    cachedPrayerData = data;
-
-                    if (data.hijriDate) {
-                        hijriDateEl.textContent = data.hijriDate;
+            if (useMyLocation) {
+                // Aladhan API - returns local times, method 4 = Umm al-Qura
+                var url = 'https://api.aladhan.com/v1/timings?latitude=' + currentLocation.lat + '&longitude=' + currentLocation.lng + '&method=4';
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        var resp = JSON.parse(xhr.responseText);
+                        var timings = resp.data.timings;
+                        var hijri = resp.data.date.hijri;
+                        // Normalize to our format (lowercase keys, "HH:MM")
+                        cachedPrayerData = {
+                            fajr: timings.Fajr,
+                            sunrise: timings.Sunrise,
+                            dhuhr: timings.Dhuhr,
+                            asr: timings.Asr,
+                            maghrib: timings.Maghrib,
+                            isha: timings.Isha
+                        };
+                        hijriDateEl.textContent = hijri.day + ' ' + hijri.month.ar + ' ' + hijri.year + ' هـ';
+                        renderPrayerGrid();
                     }
-
-                    var nextPrayer = getNextPrayer(data);
-                    var html = '';
-                    for (var i = 0; i < prayerNames.length; i++) {
-                        var p = prayerNames[i];
-                        var timeVal = data[p.key] ? formatPrayerTime(data[p.key], currentLocation.utcOffset) : '--';
-                        var isNext = p.key === nextPrayer;
-                        html += '<div class="prayer-item' + (isNext ? ' next' : '') + '">' +
-                            '<div class="prayer-name">' + p.name + '</div>' +
-                            '<div class="prayer-time-val">' + timeVal + '</div>' +
-                            '</div>';
+                };
+            } else {
+                // misrquran API for Cairo - returns UTC times
+                var url = PRAYER_API_BASE + '?lat=30.0444&lng=31.2357&dayLightSaving=false';
+                xhr.open('GET', url, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        var data = JSON.parse(xhr.responseText);
+                        // Convert UTC to Cairo local
+                        cachedPrayerData = {
+                            fajr: misrqToLocal(data.fajr),
+                            sunrise: misrqToLocal(data.sunrise),
+                            dhuhr: misrqToLocal(data.dhuhr),
+                            asr: misrqToLocal(data.asr),
+                            maghrib: misrqToLocal(data.maghrib),
+                            isha: misrqToLocal(data.isha)
+                        };
+                        if (data.hijriDate) hijriDateEl.textContent = data.hijriDate;
+                        renderPrayerGrid();
                     }
-                    prayerGridEl.innerHTML = html;
-                }
-            };
+                };
+            }
             xhr.send();
+        }
+
+        function renderPrayerGrid() {
+            var nextPrayer = getNextPrayer(cachedPrayerData);
+            var html = '';
+            for (var i = 0; i < prayerNames.length; i++) {
+                var p = prayerNames[i];
+                var timeVal = cachedPrayerData[p.key] ? formatTo12h(cachedPrayerData[p.key]) : '--';
+                var isNext = p.key === nextPrayer;
+                html += '<div class="prayer-item' + (isNext ? ' next' : '') + '">' +
+                    '<div class="prayer-name">' + p.name + '</div>' +
+                    '<div class="prayer-time-val">' + timeVal + '</div>' +
+                    '</div>';
+            }
+            prayerGridEl.innerHTML = html;
         }
 
         fetchPrayerTimes();
