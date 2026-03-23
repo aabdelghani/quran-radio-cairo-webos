@@ -25,7 +25,7 @@
         .schedule-header {
             padding: 30px 30px 15px;
             direction: rtl;
-            font-size: 28px;
+            font-size: 34px;
             color: #d4af37;
             flex-shrink: 0;
         }
@@ -60,7 +60,7 @@
             border: 1px solid rgba(78, 205, 196, 0.25);
         }
         .schedule-item .time {
-            font-size: 13px;
+            font-size: 16px;
             color: #556677;
             min-width: 110px;
             direction: ltr;
@@ -71,7 +71,7 @@
             color: #4ecdc4;
         }
         .schedule-item .prog-title {
-            font-size: 18px;
+            font-size: 22px;
             color: #ccc;
             flex: 1;
         }
@@ -80,7 +80,7 @@
             font-weight: bold;
         }
         .schedule-item .live-badge {
-            font-size: 11px;
+            font-size: 14px;
             color: #fff;
             background: #4ecdc4;
             padding: 2px 8px;
@@ -105,13 +105,13 @@
             text-align: center;
         }
         .title {
-            font-size: 44px;
+            font-size: 52px;
             margin-bottom: 10px;
             color: #d4af37;
             direction: rtl;
         }
         .subtitle {
-            font-size: 22px;
+            font-size: 26px;
             color: #8899aa;
             margin-bottom: 40px;
         }
@@ -156,7 +156,7 @@
             border-radius: 8px;
         }
         .status {
-            font-size: 18px;
+            font-size: 22px;
             color: #6688aa;
             min-height: 24px;
         }
@@ -167,16 +167,16 @@
             min-height: 60px;
         }
         .now-label {
-            font-size: 14px;
+            font-size: 18px;
             color: #4ecdc4;
             margin-bottom: 5px;
         }
         .now-title {
-            font-size: 22px;
+            font-size: 28px;
             color: #d4af37;
         }
         .now-desc {
-            font-size: 14px;
+            font-size: 18px;
             color: #8899aa;
             margin-top: 4px;
             max-width: 500px;
@@ -184,7 +184,7 @@
             margin-right: auto;
         }
         .now-time {
-            font-size: 12px;
+            font-size: 16px;
             color: #556677;
             margin-top: 3px;
             direction: ltr;
@@ -198,13 +198,13 @@
         }
         .prayer-header {
             direction: rtl;
-            font-size: 18px;
+            font-size: 24px;
             color: #d4af37;
             margin-bottom: 10px;
         }
         .prayer-hijri {
             direction: rtl;
-            font-size: 13px;
+            font-size: 17px;
             color: #8899aa;
             margin-bottom: 12px;
         }
@@ -228,7 +228,7 @@
             background: rgba(78, 205, 196, 0.08);
         }
         .prayer-name {
-            font-size: 13px;
+            font-size: 17px;
             color: #8899aa;
             margin-bottom: 4px;
             direction: rtl;
@@ -237,9 +237,36 @@
             color: #4ecdc4;
         }
         .prayer-time-val {
-            font-size: 16px;
+            font-size: 20px;
             color: #d4af37;
             direction: ltr;
+        }
+        .prayer-location {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            direction: rtl;
+        }
+        .location-name {
+            font-size: 18px;
+            color: #8899aa;
+        }
+        .location-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            color: #d4af37;
+            padding: 5px 14px;
+            border-radius: 15px;
+            font-size: 14px;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.3s;
+        }
+        .location-btn:hover, .location-btn:focus {
+            background: rgba(212, 175, 55, 0.15);
+            border-color: #d4af37;
         }
 
         @keyframes pulse {
@@ -272,6 +299,10 @@
         </div>
         <div class="prayer-section">
             <div class="prayer-header">مواقيت الصلاة</div>
+            <div class="prayer-location">
+                <span class="location-name" id="locationName">القاهرة</span>
+                <button class="location-btn" id="locationBtn">موقعي</button>
+            </div>
             <div class="prayer-hijri" id="hijriDate"></div>
             <div class="prayer-grid" id="prayerGrid"></div>
         </div>
@@ -442,9 +473,15 @@
         setInterval(fetchSchedule, 60000);
 
         // Prayer Times
-        var PRAYER_API = 'https://API.misrquran.gov.eg/api/PrayerTimes/GetTodaysTimes?lat=30.0444&lng=31.2357&dayLightSaving=false';
+        var PRAYER_API_BASE = 'https://API.misrquran.gov.eg/api/PrayerTimes/GetTodaysTimes';
         var prayerGridEl = document.getElementById('prayerGrid');
         var hijriDateEl = document.getElementById('hijriDate');
+        var locationNameEl = document.getElementById('locationName');
+        var locationBtn = document.getElementById('locationBtn');
+
+        // Location state
+        var currentLocation = { lat: 30.0444, lng: 31.2357, name: 'القاهرة', utcOffset: 2 };
+        var useMyLocation = false;
 
         var prayerNames = [
             { key: 'fajr', name: 'الفجر' },
@@ -455,68 +492,122 @@
             { key: 'isha', name: 'العشاء' }
         ];
 
-        function formatPrayerTime(utcTime) {
-            // API returns UTC time like "02:29:00", convert to Cairo (UTC+2)
+        function formatPrayerTime(utcTime, utcOffset) {
             var parts = utcTime.split(':');
-            var h = (parseInt(parts[0]) + 2) % 24;
+            var h = (parseInt(parts[0]) + utcOffset + 24) % 24;
             var m = parts[1];
             var ampm = h >= 12 ? 'PM' : 'AM';
             var h12 = h % 12 || 12;
             return h12 + ':' + m + ' ' + ampm;
         }
 
+        function getLocalNow(utcOffset) {
+            var now = new Date();
+            var localOffset = now.getTimezoneOffset();
+            return new Date(now.getTime() + (utcOffset * 60 + localOffset) * 60000);
+        }
+
         function getNextPrayer(data) {
-            var cairoNow = getCairoNow();
-            var cairoMinutes = cairoNow.getHours() * 60 + cairoNow.getMinutes();
+            var localNow = getLocalNow(currentLocation.utcOffset);
+            var localMinutes = localNow.getHours() * 60 + localNow.getMinutes();
 
             for (var i = 0; i < prayerNames.length; i++) {
                 var key = prayerNames[i].key;
                 if (!data[key]) continue;
                 var parts = data[key].split(':');
-                var h = (parseInt(parts[0]) + 2) % 24;
+                var h = (parseInt(parts[0]) + currentLocation.utcOffset + 24) % 24;
                 var prayerMinutes = h * 60 + parseInt(parts[1]);
-                if (prayerMinutes > cairoMinutes) return key;
+                if (prayerMinutes > localMinutes) return key;
             }
-            return 'fajr'; // after isha, next is fajr
+            return 'fajr';
         }
 
-        function fetchPrayerTimes() {
+        function getPrayerApiUrl() {
+            return PRAYER_API_BASE + '?lat=' + currentLocation.lat + '&lng=' + currentLocation.lng + '&dayLightSaving=false';
+        }
+
+        // Reverse geocode to get city name
+        function fetchLocationName(lat, lng) {
             var xhr = new XMLHttpRequest();
-            xhr.open('GET', PRAYER_API, true);
+            xhr.open('GET', 'https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lng + '&format=json&accept-language=ar', true);
             xhr.onload = function() {
                 if (xhr.status === 200) {
                     var data = JSON.parse(xhr.responseText);
-
-                    if (data.hijriDate) {
-                        hijriDateEl.textContent = data.hijriDate;
+                    var city = data.address.city || data.address.town || data.address.county || data.address.state || '';
+                    var country = data.address.country || '';
+                    if (city && country) {
+                        currentLocation.name = city + '، ' + country;
+                    } else if (country) {
+                        currentLocation.name = country;
                     }
-
-                    var nextPrayer = getNextPrayer(data);
-                    var html = '';
-                    for (var i = 0; i < prayerNames.length; i++) {
-                        var p = prayerNames[i];
-                        var timeVal = data[p.key] ? formatPrayerTime(data[p.key]) : '--';
-                        var isNext = p.key === nextPrayer;
-                        html += '<div class="prayer-item' + (isNext ? ' next' : '') + '">' +
-                            '<div class="prayer-name">' + p.name + '</div>' +
-                            '<div class="prayer-time-val">' + timeVal + '</div>' +
-                            '</div>';
-                    }
-                    prayerGridEl.innerHTML = html;
+                    locationNameEl.textContent = currentLocation.name;
                 }
             };
             xhr.send();
         }
 
-        fetchPrayerTimes();
-        setInterval(fetchPrayerTimes, 300000); // refresh every 5 min
+        // Detect timezone offset from coordinates
+        function getUtcOffsetForCoords(lat, lng) {
+            // Rough estimate: 1 hour per 15 degrees longitude, rounded
+            var offset = Math.round(lng / 15);
+            // DST approximation for Europe (March-October)
+            var month = new Date().getMonth();
+            if (lat > 40 && month >= 2 && month <= 9) offset += 1;
+            return offset;
+        }
+
+        locationBtn.addEventListener('click', function() {
+            if (useMyLocation) {
+                // Switch back to Cairo
+                useMyLocation = false;
+                currentLocation = { lat: 30.0444, lng: 31.2357, name: 'القاهرة', utcOffset: 2 };
+                locationNameEl.textContent = currentLocation.name;
+                locationBtn.textContent = 'موقعي';
+                azanTriggered = {};
+                fetchPrayerTimes();
+            } else {
+                // Try geolocation
+                locationBtn.textContent = '...';
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function(pos) {
+                        useMyLocation = true;
+                        var lat = pos.coords.latitude;
+                        var lng = pos.coords.longitude;
+                        currentLocation.lat = lat;
+                        currentLocation.lng = lng;
+                        currentLocation.utcOffset = getUtcOffsetForCoords(lat, lng);
+                        currentLocation.name = 'موقعي';
+                        locationNameEl.textContent = currentLocation.name;
+                        locationBtn.textContent = 'القاهرة';
+                        azanTriggered = {};
+                        fetchLocationName(lat, lng);
+                        fetchPrayerTimes();
+                    }, function() {
+                        // Geolocation denied/failed - fallback to Stockholm
+                        useMyLocation = true;
+                        currentLocation = { lat: 59.3293, lng: 18.0686, name: 'ستوكهولم، السويد', utcOffset: 2 };
+                        locationNameEl.textContent = currentLocation.name;
+                        locationBtn.textContent = 'القاهرة';
+                        azanTriggered = {};
+                        fetchPrayerTimes();
+                    });
+                } else {
+                    // No geolocation - fallback to Stockholm
+                    useMyLocation = true;
+                    currentLocation = { lat: 59.3293, lng: 18.0686, name: 'ستوكهولم، السويد', utcOffset: 2 };
+                    locationNameEl.textContent = currentLocation.name;
+                    locationBtn.textContent = 'القاهرة';
+                    azanTriggered = {};
+                    fetchPrayerTimes();
+                }
+            }
+        });
 
         // Azan player
         var azanAudio = new Audio('azan.mp3');
         var azanPlaying = false;
         var wasPlayingBeforeAzan = false;
-        var azanTriggered = {}; // track which prayers already triggered today
-        // Azan prayers (not sunrise - no azan for sunrise)
+        var azanTriggered = {};
         var azanPrayers = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
         var cachedPrayerData = null;
 
@@ -524,7 +615,6 @@
             azanPlaying = false;
             statusEl.textContent = playing ? 'Live' : 'Press to play';
             statusEl.className = playing ? 'status live' : 'status';
-            // Resume radio if it was playing before azan
             if (wasPlayingBeforeAzan) {
                 startPlayback(STREAM_URL);
             }
@@ -533,7 +623,6 @@
         function playAzan() {
             azanPlaying = true;
             wasPlayingBeforeAzan = playing;
-            // Pause radio stream
             if (playing) {
                 if (hls) { hls.destroy(); hls = null; }
                 audio.pause();
@@ -547,12 +636,11 @@
 
         function checkAzanTime() {
             if (!cachedPrayerData || azanPlaying) return;
-            var cairoNow = getCairoNow();
-            var cairoH = cairoNow.getHours();
-            var cairoM = cairoNow.getMinutes();
-            var todayKey = cairoNow.toDateString();
+            var localNow = getLocalNow(currentLocation.utcOffset);
+            var localH = localNow.getHours();
+            var localM = localNow.getMinutes();
+            var todayKey = localNow.toDateString();
 
-            // Reset triggered list on new day
             if (azanTriggered._day !== todayKey) {
                 azanTriggered = { _day: todayKey };
             }
@@ -563,9 +651,9 @@
                 var utcTime = cachedPrayerData[key];
                 if (!utcTime) continue;
                 var parts = utcTime.split(':');
-                var pH = (parseInt(parts[0]) + 2) % 24;
+                var pH = (parseInt(parts[0]) + currentLocation.utcOffset + 24) % 24;
                 var pM = parseInt(parts[1]);
-                if (cairoH === pH && cairoM === pM) {
+                if (localH === pH && localM === pM) {
                     azanTriggered[key] = true;
                     playAzan();
                     break;
@@ -573,11 +661,9 @@
             }
         }
 
-        // Override fetchPrayerTimes to cache data for azan check
-        var origFetchPrayer = fetchPrayerTimes;
-        fetchPrayerTimes = function() {
+        function fetchPrayerTimes() {
             var xhr = new XMLHttpRequest();
-            xhr.open('GET', PRAYER_API, true);
+            xhr.open('GET', getPrayerApiUrl(), true);
             xhr.onload = function() {
                 if (xhr.status === 200) {
                     var data = JSON.parse(xhr.responseText);
@@ -591,7 +677,7 @@
                     var html = '';
                     for (var i = 0; i < prayerNames.length; i++) {
                         var p = prayerNames[i];
-                        var timeVal = data[p.key] ? formatPrayerTime(data[p.key]) : '--';
+                        var timeVal = data[p.key] ? formatPrayerTime(data[p.key], currentLocation.utcOffset) : '--';
                         var isNext = p.key === nextPrayer;
                         html += '<div class="prayer-item' + (isNext ? ' next' : '') + '">' +
                             '<div class="prayer-name">' + p.name + '</div>' +
@@ -602,10 +688,10 @@
                 }
             };
             xhr.send();
-        };
-        fetchPrayerTimes();
+        }
 
-        // Check every 30 seconds for azan time
+        fetchPrayerTimes();
+        setInterval(fetchPrayerTimes, 300000);
         setInterval(checkAzanTime, 30000);
     </script>
 </body>
