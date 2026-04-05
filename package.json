@@ -1,0 +1,23 @@
+{
+  "name": "lg_webos_app",
+  "version": "1.0.0",
+  "description": "إذاعة القرآن الكريم من القاهرة",
+  "main": "hls.min.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aabdelghani/quran-radio-cairo-webos.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/aabdelghani/quran-radio-cairo-webos/issues"
+  },
+  "homepage": "https://github.com/aabdelghani/quran-radio-cairo-webos#readme",
+  "dependencies": {
+    "@playwright/test": "^1.58.2"
+  }
+}

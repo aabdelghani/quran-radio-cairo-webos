@@ -1,0 +1,717 @@
+/* ============================================================================
+   Quran Radio Cairo — Stylesheet
+   ============================================================================ */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { direction: rtl; }
+body {
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, #0a1628 0%, #1a2a4a 50%, #0a1628 100%);
+    font-family: 'Noto Naskh Arabic', 'Amiri', 'Scheherazade New', 'Noto Sans Arabic', 'Traditional Arabic', 'Tahoma', 'Arial', sans-serif;
+    overflow: hidden;
+    color: #fff;
+    display: flex;
+    direction: rtl;
+}
+
+/* Keyboard/D-pad focus ring (explicit, TV-friendly) */
+[tabindex]:focus,
+button:focus {
+    outline: none;
+}
+.focusable.focused,
+.focusable:focus-visible {
+    outline: 4px solid #4ecdc4;
+    outline-offset: 6px;
+    box-shadow: 0 0 40px rgba(78, 205, 196, 0.5);
+}
+
+/* ============ Left panel: Schedule ============ */
+.schedule-panel {
+    width: 45%;
+    height: calc(100vh - 60px);
+    display: flex;
+    flex-direction: column;
+    border-inline-end: 1px solid rgba(212, 175, 55, 0.15);
+}
+.schedule-header {
+    padding: 30px 30px 15px;
+    direction: rtl;
+    font-size: 51px;
+    color: #d4af37;
+    flex-shrink: 0;
+}
+.schedule-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 20px 30px;
+    direction: rtl;
+    transition: opacity 0.3s ease;
+}
+.schedule-list::-webkit-scrollbar { width: 4px; }
+.schedule-list::-webkit-scrollbar-thumb {
+    background: rgba(212, 175, 55, 0.3);
+    border-radius: 2px;
+}
+.schedule-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    border-radius: 10px;
+    margin-bottom: 6px;
+    transition: background 0.2s;
+    gap: 14px;
+}
+.schedule-item.active {
+    background: rgba(231, 76, 60, 0.1);
+    border: 1px solid rgba(231, 76, 60, 0.25);
+}
+.schedule-item .time {
+    font-size: 24px;
+    color: #556677;
+    min-width: 140px;
+    direction: ltr;
+    text-align: center;
+    flex-shrink: 0;
+    margin-inline-start: 20px;
+}
+.schedule-item.active .time { color: #e74c3c; }
+.schedule-item .prog-img {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.05);
+}
+.schedule-item .prog-title {
+    font-size: 33px;
+    color: #ccc;
+    flex: 1;
+    unicode-bidi: isolate;
+    direction: rtl;
+}
+.schedule-item.active .prog-title {
+    color: #d4af37;
+    font-weight: bold;
+}
+.schedule-item .live-badge {
+    font-size: 21px;
+    color: #fff;
+    background: #e74c3c;
+    padding: 2px 8px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    display: none;
+}
+.schedule-item.active .live-badge { display: inline-block; }
+
+/* Current program progress bar */
+.schedule-item.active .prog-progress {
+    display: block;
+    height: 4px;
+    background: rgba(231, 76, 60, 0.2);
+    border-radius: 2px;
+    margin-top: 6px;
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+}
+.schedule-item .prog-progress { display: none; }
+.schedule-item .prog-progress-bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    background: #e74c3c;
+    transition: width 1s linear;
+}
+.schedule-item.active .prog-meta {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 4px;
+}
+.schedule-item .prog-meta { display: block; flex: 1; }
+
+/* ============ Right panel: Player ============ */
+.player-panel {
+    width: 55%;
+    height: calc(100vh - 60px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.player-container {
+    text-align: center;
+}
+.title {
+    font-size: 52px;
+    margin-bottom: 10px;
+    color: #d4af37;
+    direction: rtl;
+    transition: opacity 0.3s ease;
+}
+.subtitle {
+    font-size: 26px;
+    color: #8899aa;
+    margin-bottom: 40px;
+    transition: opacity 0.3s ease;
+}
+.play-btn {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    border: 4px solid #d4af37;
+    background: rgba(212, 175, 55, 0.1);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 25px;
+    transition: all 0.3s ease;
+    outline: none;
+}
+.play-btn:hover,
+.play-btn.focused {
+    background: rgba(212, 175, 55, 0.25);
+    transform: scale(1.08);
+    box-shadow: 0 0 40px rgba(212, 175, 55, 0.5);
+}
+.play-btn.playing {
+    border-color: #e74c3c;
+    background: rgba(231, 76, 60, 0.1);
+    animation: pulse 2s infinite;
+}
+.play-btn.playing:hover,
+.play-btn.playing.focused {
+    background: rgba(231, 76, 60, 0.25);
+    box-shadow: 0 0 40px rgba(231, 76, 60, 0.5);
+}
+.icon-play {
+    width: 0; height: 0;
+    border-top: 30px solid transparent;
+    border-bottom: 30px solid transparent;
+    border-left: 50px solid #d4af37;
+    margin-left: 10px;
+}
+.icon-stop {
+    width: 48px; height: 48px;
+    background: #e74c3c;
+    border-radius: 8px;
+}
+.status {
+    font-size: 22px;
+    color: #6688aa;
+    min-height: 24px;
+}
+.status.live { color: #e74c3c; }
+
+/* ============ Prayer section ============ */
+.prayer-section {
+    margin-top: 30px;
+    width: 100%;
+    max-width: 520px;
+}
+.prayer-header {
+    direction: rtl;
+    font-size: 36px;
+    color: #d4af37;
+    margin-bottom: 10px;
+    text-align: center;
+}
+.prayer-tz-label {
+    direction: rtl;
+    font-size: 18px;
+    color: #556677;
+    margin-bottom: 8px;
+    text-align: center;
+}
+.prayer-hijri {
+    direction: rtl;
+    font-size: 26px;
+    color: #8899aa;
+    margin-bottom: 12px;
+    text-align: center;
+}
+.prayer-grid {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    transition: opacity 0.3s ease;
+}
+.prayer-item {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(212, 175, 55, 0.12);
+    border-radius: 10px;
+    padding: 10px 14px;
+    text-align: center;
+    min-width: 75px;
+    transition: all 0.3s;
+}
+.prayer-item.next {
+    border-color: rgba(78, 205, 196, 0.4);
+    background: rgba(78, 205, 196, 0.08);
+}
+.prayer-item.muted {
+    opacity: 0.4;
+}
+.prayer-name {
+    font-size: 26px;
+    color: #8899aa;
+    margin-bottom: 4px;
+    direction: rtl;
+}
+.prayer-item.next .prayer-name { color: #4ecdc4; }
+.prayer-time-val {
+    font-size: 30px;
+    color: #d4af37;
+    direction: ltr;
+}
+
+.prayer-location {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    direction: rtl;
+}
+.location-name {
+    font-size: 36px;
+    color: #8899aa;
+}
+.location-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    color: #d4af37;
+    padding: 8px 20px;
+    border-radius: 15px;
+    font-size: 30px;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s;
+}
+.location-btn:hover,
+.location-btn.focused {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: #d4af37;
+}
+
+/* Settings button */
+.settings-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    color: #d4af37;
+    padding: 8px 20px;
+    border-radius: 15px;
+    font-size: 30px;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s;
+    margin-right: 8px;
+}
+.settings-btn:hover,
+.settings-btn.focused {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: #d4af37;
+}
+
+/* Next salah countdown visual ring */
+.next-salah-container {
+    direction: rtl;
+    text-align: center;
+    margin-bottom: 12px;
+}
+.next-salah-text {
+    font-size: 22px;
+    color: #e74c3c;
+    margin-bottom: 6px;
+}
+.next-salah-bar {
+    height: 6px;
+    background: rgba(231, 76, 60, 0.15);
+    border-radius: 3px;
+    overflow: hidden;
+    max-width: 400px;
+    margin: 0 auto;
+}
+.next-salah-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4ecdc4 0%, #e74c3c 100%);
+    transition: width 1s linear;
+    border-radius: 3px;
+}
+
+/* Clock */
+.current-time-display {
+    font-size: 28px;
+    color: #d4af37;
+    margin-bottom: 4px;
+    direction: ltr;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ============ Toast notifications ============ */
+.toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(10, 22, 40, 0.95);
+    border: 2px solid #d4af37;
+    border-radius: 12px;
+    padding: 20px 32px;
+    z-index: 10000;
+    direction: rtl;
+    font-size: 26px;
+    color: #fff;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+    max-width: 700px;
+    text-align: center;
+    display: none;
+    animation: toastIn 0.3s ease;
+}
+.toast.on { border-color: #4ecdc4; }
+.toast.off { border-color: #e74c3c; }
+.toast .toast-title {
+    font-size: 30px;
+    color: #d4af37;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+.toast.on .toast-title { color: #4ecdc4; }
+.toast.off .toast-title { color: #e74c3c; }
+.toast .toast-body {
+    font-size: 22px;
+    color: #ccc;
+    line-height: 1.5;
+}
+.toast .toast-body-en {
+    font-size: 16px;
+    color: #8899aa;
+    margin-top: 8px;
+    direction: ltr;
+}
+
+/* Info toast (simpler, reused) */
+.info-toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(10, 22, 40, 0.95);
+    border: 2px solid #d4af37;
+    border-radius: 12px;
+    padding: 18px 28px;
+    z-index: 10000;
+    direction: rtl;
+    font-size: 22px;
+    color: #fff;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+    max-width: 700px;
+    text-align: center;
+    display: none;
+    animation: toastIn 0.3s ease;
+}
+
+@keyframes toastIn {
+    from { opacity: 0; transform: translate(-50%, 20px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* ============ Dim backdrop behind overlays ============ */
+.dim-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 9900;
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+.dim-backdrop.visible { display: block; }
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* ============ Azan overlay strip ============ */
+.azan-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(90deg, rgba(231, 76, 60, 0.95) 0%, rgba(192, 57, 43, 0.95) 100%);
+    padding: 25px 30px;
+    text-align: center;
+    z-index: 9999;
+    direction: rtl;
+    font-size: 42px;
+    font-weight: bold;
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(231, 76, 60, 0.5);
+    animation: slideDown 0.5s ease, glow 2s ease-in-out infinite;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+/* Pre-azan warning strip */
+.pre-azan-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(90deg, rgba(78, 205, 196, 0.95) 0%, rgba(52, 152, 170, 0.95) 100%);
+    padding: 20px 30px;
+    text-align: center;
+    z-index: 9998;
+    direction: rtl;
+    font-size: 36px;
+    font-weight: bold;
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(78, 205, 196, 0.5);
+    animation: slideDown 0.5s ease;
+    display: none;
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(0); }
+}
+@keyframes glow {
+    0%, 100% { box-shadow: 0 4px 20px rgba(231, 76, 60, 0.5); }
+    50% { box-shadow: 0 4px 40px rgba(231, 76, 60, 0.8); }
+}
+
+/* ============ Offline banner ============ */
+.offline-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(230, 126, 34, 0.95);
+    color: #fff;
+    padding: 14px 20px;
+    text-align: center;
+    font-size: 22px;
+    font-weight: bold;
+    z-index: 9997;
+    direction: rtl;
+    display: none;
+    box-shadow: 0 4px 15px rgba(230, 126, 34, 0.4);
+}
+
+/* ============ Loading skeleton ============ */
+.skeleton {
+    background: linear-gradient(90deg,
+        rgba(255, 255, 255, 0.03) 0%,
+        rgba(255, 255, 255, 0.08) 50%,
+        rgba(255, 255, 255, 0.03) 100%);
+    background-size: 200% 100%;
+    animation: skeletonPulse 1.5s ease-in-out infinite;
+    border-radius: 8px;
+}
+.skeleton-item {
+    height: 60px;
+    margin-bottom: 10px;
+}
+@keyframes skeletonPulse {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ============ Back button confirmation dialog ============ */
+.dialog-backdrop {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 11000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+.dialog-backdrop.visible { display: flex; }
+.dialog-box {
+    background: #0a1628;
+    border: 2px solid #d4af37;
+    border-radius: 16px;
+    padding: 40px 50px;
+    text-align: center;
+    direction: rtl;
+    max-width: 600px;
+}
+.dialog-title {
+    font-size: 36px;
+    color: #d4af37;
+    margin-bottom: 20px;
+}
+.dialog-body {
+    font-size: 24px;
+    color: #ccc;
+    margin-bottom: 30px;
+}
+.dialog-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+}
+.dialog-btn {
+    padding: 12px 40px;
+    border-radius: 25px;
+    border: 2px solid #8899aa;
+    background: rgba(255, 255, 255, 0.05);
+    color: #ccc;
+    font-size: 26px;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s;
+}
+.dialog-btn.primary {
+    border-color: #e74c3c;
+    color: #e74c3c;
+}
+.dialog-btn.focused {
+    background: rgba(212, 175, 55, 0.2);
+    border-color: #d4af37;
+    color: #d4af37;
+    transform: scale(1.05);
+}
+
+/* ============ Settings menu ============ */
+.settings-menu {
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: 550px;
+    background: rgba(10, 22, 40, 0.98);
+    border-left: 2px solid #d4af37;
+    z-index: 10500;
+    display: none;
+    direction: rtl;
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.6);
+    animation: slideInFromRightEdge 0.35s ease-out;
+    flex-direction: column;
+}
+.settings-menu.visible { display: flex; }
+.settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 30px 30px 20px;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+    flex-shrink: 0;
+}
+.settings-header h2 {
+    font-size: 40px;
+    color: #d4af37;
+    margin: 0;
+}
+.settings-close-btn {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    border: 3px solid #e74c3c;
+    background: rgba(231, 76, 60, 0.15);
+    color: #e74c3c;
+    font-size: 38px;
+    line-height: 1;
+    cursor: pointer;
+    outline: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-weight: bold;
+}
+.settings-close-btn:hover,
+.settings-close-btn.focused {
+    background: rgba(231, 76, 60, 0.35);
+    transform: scale(1.1);
+    box-shadow: 0 0 30px rgba(231, 76, 60, 0.6);
+}
+.settings-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 30px 30px;
+}
+.settings-section {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+}
+.settings-section h3 {
+    font-size: 24px;
+    color: #4ecdc4;
+    margin-bottom: 12px;
+}
+.settings-option {
+    display: block;
+    width: 100%;
+    padding: 12px 18px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(212, 175, 55, 0.15);
+    border-radius: 10px;
+    color: #ccc;
+    font-size: 22px;
+    cursor: pointer;
+    text-align: right;
+    direction: rtl;
+    outline: none;
+    transition: all 0.2s;
+}
+.settings-option.active {
+    background: rgba(78, 205, 196, 0.15);
+    border-color: #4ecdc4;
+    color: #4ecdc4;
+}
+.settings-option.focused {
+    transform: scale(1.03);
+    border-color: #d4af37;
+    color: #d4af37;
+}
+@keyframes slideInRight {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+}
+@keyframes slideInFromRightEdge {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+/* ============ Footer disclaimer ============ */
+.footer-disclaimer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    padding: 18px 40px;
+    font-size: 18px;
+    color: #445566;
+    direction: rtl;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(10, 22, 40, 0) 0%, rgba(10, 22, 40, 0.95) 60%);
+    z-index: 5;
+}
+.footer-disclaimer .ltr { direction: ltr; }
+
+/* ============ Animations ============ */
+@keyframes pulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(231, 76, 60, 0.2); }
+    50% { box-shadow: 0 0 50px rgba(231, 76, 60, 0.4); }
+}

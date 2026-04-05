@@ -1,720 +1,102 @@
 <!DOCTYPE html>
-<html>
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=1920,initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' 'unsafe-inline' blob:; worker-src 'self' blob:; child-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' blob: https: https://API.misrquran.gov.eg https://api.aladhan.com https://nominatim.openstreetmap.org https://ipapi.co https://ipwho.is https://freeipapi.com https://get.geojs.io https://service.webvideocore.net https://stream.zeno.fm; media-src 'self' https: blob:; font-src 'self';">
     <title>Quran Radio Cairo</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            width: 100vw;
-            height: 100vh;
-            background: linear-gradient(135deg, #0a1628 0%, #1a2a4a 50%, #0a1628 100%);
-            font-family: 'Arial', sans-serif;
-            overflow: hidden;
-            color: #fff;
-            display: flex;
-        }
-        /* Left panel - schedule */
-        .schedule-panel {
-            width: 45%;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid rgba(212, 175, 55, 0.15);
-        }
-        .schedule-header {
-            padding: 30px 30px 15px;
-            direction: rtl;
-            font-size: 34px;
-            color: #d4af37;
-            flex-shrink: 0;
-        }
-        .schedule-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 10px 20px 30px;
-            direction: rtl;
-        }
-        .schedule-list::-webkit-scrollbar {
-            width: 4px;
-        }
-        .schedule-list::-webkit-scrollbar-thumb {
-            background: rgba(212, 175, 55, 0.3);
-            border-radius: 2px;
-        }
-        .schedule-item {
-            display: flex;
-            align-items: center;
-            padding: 12px 15px;
-            border-radius: 10px;
-            margin-bottom: 6px;
-            transition: background 0.2s;
-            gap: 14px;
-        }
-        .schedule-item:hover, .schedule-item:focus {
-            background: rgba(255, 255, 255, 0.05);
-            outline: none;
-        }
-        .schedule-item.active {
-            background: rgba(78, 205, 196, 0.1);
-            border: 1px solid rgba(78, 205, 196, 0.25);
-        }
-        .schedule-item .time {
-            font-size: 16px;
-            color: #556677;
-            min-width: 110px;
-            direction: ltr;
-            text-align: center;
-            flex-shrink: 0;
-        }
-        .schedule-item.active .time {
-            color: #4ecdc4;
-        }
-        .schedule-item .prog-title {
-            font-size: 22px;
-            color: #ccc;
-            flex: 1;
-        }
-        .schedule-item.active .prog-title {
-            color: #d4af37;
-            font-weight: bold;
-        }
-        .schedule-item .live-badge {
-            font-size: 14px;
-            color: #fff;
-            background: #4ecdc4;
-            padding: 2px 8px;
-            border-radius: 4px;
-            flex-shrink: 0;
-            display: none;
-        }
-        .schedule-item.active .live-badge {
-            display: inline-block;
-        }
-
-        /* Right panel - player */
-        .player-panel {
-            width: 55%;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        .player-container {
-            text-align: center;
-        }
-        .title {
-            font-size: 52px;
-            margin-bottom: 10px;
-            color: #d4af37;
-            direction: rtl;
-        }
-        .subtitle {
-            font-size: 26px;
-            color: #8899aa;
-            margin-bottom: 40px;
-        }
-        .play-btn {
-            width: 140px;
-            height: 140px;
-            border-radius: 50%;
-            border: 4px solid #d4af37;
-            background: rgba(212, 175, 55, 0.1);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 25px;
-            transition: all 0.3s ease;
-            outline: none;
-        }
-        .play-btn:hover, .play-btn:focus {
-            background: rgba(212, 175, 55, 0.25);
-            transform: scale(1.08);
-            box-shadow: 0 0 40px rgba(212, 175, 55, 0.3);
-        }
-        .play-btn.playing {
-            border-color: #e74c3c;
-            background: rgba(231, 76, 60, 0.1);
-            animation: pulse 2s infinite;
-        }
-        .play-btn.playing:hover, .play-btn.playing:focus {
-            background: rgba(231, 76, 60, 0.25);
-            box-shadow: 0 0 40px rgba(231, 76, 60, 0.3);
-        }
-        .icon-play {
-            width: 0; height: 0;
-            border-top: 30px solid transparent;
-            border-bottom: 30px solid transparent;
-            border-left: 50px solid #d4af37;
-            margin-left: 10px;
-        }
-        .icon-stop {
-            width: 48px; height: 48px;
-            background: #e74c3c;
-            border-radius: 8px;
-        }
-        .status {
-            font-size: 22px;
-            color: #6688aa;
-            min-height: 24px;
-        }
-        .status.live { color: #4ecdc4; }
-
-        /* Prayer times */
-        .prayer-section {
-            margin-top: 30px;
-            width: 100%;
-            max-width: 520px;
-        }
-        .prayer-header {
-            direction: rtl;
-            font-size: 24px;
-            color: #d4af37;
-            margin-bottom: 10px;
-        }
-        .prayer-hijri {
-            direction: rtl;
-            font-size: 17px;
-            color: #8899aa;
-            margin-bottom: 12px;
-        }
-        .prayer-grid {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        .prayer-item {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(212, 175, 55, 0.12);
-            border-radius: 10px;
-            padding: 10px 14px;
-            text-align: center;
-            min-width: 75px;
-            transition: all 0.3s;
-        }
-        .prayer-item.next {
-            border-color: rgba(78, 205, 196, 0.4);
-            background: rgba(78, 205, 196, 0.08);
-        }
-        .prayer-name {
-            font-size: 17px;
-            color: #8899aa;
-            margin-bottom: 4px;
-            direction: rtl;
-        }
-        .prayer-item.next .prayer-name {
-            color: #4ecdc4;
-        }
-        .prayer-time-val {
-            font-size: 20px;
-            color: #d4af37;
-            direction: ltr;
-        }
-        .prayer-location {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 10px;
-            direction: rtl;
-        }
-        .location-name {
-            font-size: 18px;
-            color: #8899aa;
-        }
-        .location-btn {
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(212, 175, 55, 0.25);
-            color: #d4af37;
-            padding: 5px 14px;
-            border-radius: 15px;
-            font-size: 14px;
-            cursor: pointer;
-            outline: none;
-            transition: all 0.3s;
-        }
-        .location-btn:hover, .location-btn:focus {
-            background: rgba(212, 175, 55, 0.15);
-            border-color: #d4af37;
-        }
-
-        @keyframes pulse {
-            0%, 100% { box-shadow: 0 0 20px rgba(231, 76, 60, 0.2); }
-            50% { box-shadow: 0 0 50px rgba(231, 76, 60, 0.4); }
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- Hidden keep-alive video (prevents webOS screen saver while audio plays) -->
+    <video id="keepAliveVideo" src="keep_alive.mp4" muted loop playsinline
+        style="position:fixed;bottom:0;left:0;width:2px;height:2px;opacity:0.01;pointer-events:none;z-index:-1"
+        aria-hidden="true"></video>
+
+    <!-- Offline banner -->
+    <div class="offline-banner" id="offlineBanner" role="alert">
+        لا يوجد اتصال بالإنترنت
+    </div>
+
+    <!-- Dim backdrop shown behind overlays -->
+    <div class="dim-backdrop" id="dimBackdrop" aria-hidden="true"></div>
+
+    <!-- Pre-azan notification -->
+    <div class="pre-azan-overlay" id="preAzanOverlay" role="status" aria-live="polite"></div>
+
+    <!-- Azan overlay -->
+    <div class="azan-overlay" id="azanOverlay" role="alert" aria-live="assertive">
+        <div id="azanOverlayText"></div>
+    </div>
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast" role="status" aria-live="polite">
+        <div class="toast-title" id="toastTitle"></div>
+        <div class="toast-body" id="toastBody"></div>
+        <div class="toast-body-en" id="toastBodyEn"></div>
+    </div>
+
+    <!-- Info toast (simpler) -->
+    <div class="info-toast" id="infoToast" role="status" aria-live="polite"></div>
+
+    <!-- Exit confirmation dialog -->
+    <div class="dialog-backdrop" id="dialogBackdrop" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+        <div class="dialog-box">
+            <div class="dialog-title" id="dialogTitle">الخروج من التطبيق</div>
+            <div class="dialog-body">هل أنت متأكد من الخروج؟</div>
+            <div class="dialog-buttons">
+                <button class="dialog-btn primary" id="dialogYes">نعم</button>
+                <button class="dialog-btn" id="dialogNo">لا</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings menu -->
+    <div class="settings-menu" id="settingsMenu" role="dialog" aria-modal="true"></div>
+
+    <!-- Left: Schedule -->
+    <section class="schedule-panel" aria-label="فقرات اليوم">
+        <div class="schedule-header">فقرات اليوم</div>
+        <div class="schedule-list" id="scheduleList" role="list" aria-live="polite"></div>
+    </section>
+
+    <!-- Right: Player -->
+    <section class="player-panel" aria-label="المشغل ومواقيت الصلاة">
+        <div class="player-container">
+            <h1 class="title" id="mainTitle" aria-live="polite">إذاعة القرآن الكريم من القاهرة</h1>
+            <div class="subtitle" id="mainSubtitle">Holy Quran Radio - Cairo</div>
+            <button class="play-btn focusable" id="playBtn" aria-label="تشغيل / إيقاف" aria-pressed="false" autofocus>
+                <div class="icon-play" id="btnIcon"></div>
+            </button>
+            <div class="status" id="status" role="status" aria-live="polite">Press to play</div>
+        </div>
+        <div class="prayer-section" aria-label="مواقيت الصلاة">
+            <h2 class="prayer-header">مواقيت الصلاة</h2>
+            <div class="prayer-tz-label" id="prayerTzLabel">بتوقيت القاهرة</div>
+            <div class="prayer-location">
+                <span class="location-name" id="locationName">القاهرة</span>
+                <button class="location-btn focusable" id="locationBtn" aria-label="تبديل الموقع">موقعي</button>
+                <button class="settings-btn focusable" id="settingsBtn" aria-label="الإعدادات">⚙</button>
+            </div>
+            <div class="prayer-hijri" id="hijriDate"></div>
+            <div class="current-time-display" id="currentTimeDisplay" aria-live="off"></div>
+            <div class="next-salah-container">
+                <div class="next-salah-text" id="nextSalahText"></div>
+                <div class="next-salah-bar"><div class="next-salah-bar-fill" id="nextSalahBarFill"></div></div>
+            </div>
+            <div class="prayer-grid" id="prayerGrid" role="list" aria-live="polite"></div>
+        </div>
+    </section>
+
+    <!-- Footer disclaimer -->
+    <footer class="footer-disclaimer">
+        <span>هذا التطبيق غير رسمي ولا يمثل إذاعة القرآن الكريم المصرية. جميع الحقوق محفوظة لإذاعة القرآن الكريم المصرية © ٢٠٢٦</span>
+        <span class="ltr">Not affiliated with misrquran.gov.eg | v1.0.0</span>
+    </footer>
+
     <script src="webOSTVjs-1.2.10/webOSTV.js" charset="utf-8"></script>
     <script src="webOSTVjs-1.2.10/webOSTV-dev.js" charset="utf-8"></script>
     <script src="hls.min.js"></script>
-
-    <!-- Left: Schedule -->
-    <div class="schedule-panel">
-        <div class="schedule-header">فقرات اليوم</div>
-        <div class="schedule-list" id="scheduleList"></div>
-    </div>
-
-    <!-- Right: Player -->
-    <div class="player-panel">
-        <div class="player-container">
-            <div class="title" id="mainTitle">إذاعة القرآن الكريم من القاهرة</div>
-            <div class="subtitle" id="mainSubtitle">Holy Quran Radio - Cairo</div>
-            <button class="play-btn" id="playBtn" autofocus>
-                <div class="icon-play" id="btnIcon"></div>
-            </button>
-            <div class="status" id="status">Press to play</div>
-        </div>
-        <div class="prayer-section">
-            <div class="prayer-header">مواقيت الصلاة</div>
-            <div class="prayer-location">
-                <span class="location-name" id="locationName">القاهرة</span>
-                <button class="location-btn" id="locationBtn">موقعي</button>
-            </div>
-            <div class="prayer-hijri" id="hijriDate"></div>
-            <div class="prayer-grid" id="prayerGrid"></div>
-        </div>
-    </div>
-    <div style="position:fixed;bottom:8px;left:20px;right:20px;font-size:18px;color:#445566;direction:rtl;display:flex;justify-content:space-between">
-        <span>هذا التطبيق غير رسمي ولا يمثل إذاعة القرآن الكريم المصرية. جميع الحقوق محفوظة لإذاعة القرآن الكريم المصرية © ٢٠٢٦</span>
-        <span style="direction:ltr">Not affiliated with misrquran.gov.eg | v1.0.0</span>
-    </div>
-
-    <script>
-        var STREAM_URL = 'https://service.webvideocore.net/CL1olYogIrDWvwqiIKK7eCxOS4PStqG9DuEjAr2ZjZQtvS3d4y9r0cvRhvS17SGN/a_7a4vuubc6mo8.m3u8';
-        var FALLBACK_URL = 'https://stream.zeno.fm/tv0x28xvyc9uv';
-        var audio = document.createElement('audio');
-        var hls = null;
-        var playing = false;
-        var stoppingManually = false;
-        var btn = document.getElementById('playBtn');
-        var icon = document.getElementById('btnIcon');
-        var statusEl = document.getElementById('status');
-
-        audio.addEventListener('playing', function() {
-            statusEl.textContent = 'Live';
-            statusEl.className = 'status live';
-        });
-        audio.addEventListener('waiting', function() {
-            statusEl.textContent = 'Buffering...';
-            statusEl.className = 'status';
-        });
-        audio.addEventListener('error', function() {
-            if (stoppingManually) return;
-            statusEl.textContent = 'Error - tap to retry';
-            statusEl.className = 'status';
-            stopPlayback();
-        });
-
-        function stopPlayback() {
-            stoppingManually = true;
-            if (hls) { hls.destroy(); hls = null; }
-            audio.pause();
-            audio.src = '';
-            playing = false;
-            btn.classList.remove('playing');
-            icon.className = 'icon-play';
-            setTimeout(function() { stoppingManually = false; }, 100);
-        }
-
-        function startPlayback(url) {
-            statusEl.textContent = 'Connecting...';
-            statusEl.className = 'status';
-            playing = true;
-            btn.classList.add('playing');
-            icon.className = 'icon-stop';
-
-            if (url.indexOf('.m3u8') !== -1 && Hls.isSupported()) {
-                hls = new Hls();
-                hls.loadSource(url);
-                hls.attachMedia(audio);
-                hls.on(Hls.Events.MANIFEST_PARSED, function() { audio.play(); });
-                hls.on(Hls.Events.ERROR, function(event, data) {
-                    if (data.fatal) {
-                        stopPlayback();
-                        if (url !== FALLBACK_URL) {
-                            startPlayback(FALLBACK_URL);
-                        } else {
-                            statusEl.textContent = 'Error - tap to retry';
-                        }
-                    }
-                });
-            } else {
-                audio.src = url;
-                audio.play();
-            }
-        }
-
-        function toggle() {
-            if (playing) {
-                stopPlayback();
-                statusEl.textContent = 'Press to play';
-                statusEl.className = 'status';
-            } else {
-                startPlayback(STREAM_URL);
-            }
-        }
-
-        btn.addEventListener('click', toggle);
-
-        // TV remote support
-        document.addEventListener('keydown', function(e) {
-            if (e.keyCode === 13) { // Enter/OK
-                toggle();
-            }
-        });
-
-        // Schedule
-        var scheduleListEl = document.getElementById('scheduleList');
-        var SCHEDULE_API = 'https://API.misrquran.gov.eg/api/RadioProgrammeSchedule/GetByDay';
-
-        function parseTimeToMinutes(timeStr) {
-            var match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
-            if (!match) return -1;
-            var h = parseInt(match[1]);
-            var m = parseInt(match[2]);
-            var ampm = match[3].toUpperCase();
-            if (ampm === 'PM' && h !== 12) h += 12;
-            if (ampm === 'AM' && h === 12) h = 0;
-            return h * 60 + m;
-        }
-
-        function getCairoNow() {
-            var now = new Date();
-            var cairoOffset = 2 * 60;
-            var localOffset = now.getTimezoneOffset();
-            return new Date(now.getTime() + (cairoOffset + localOffset) * 60000);
-        }
-
-        function getCairoMinutesNow() {
-            var cn = getCairoNow();
-            return cn.getHours() * 60 + cn.getMinutes();
-        }
-
-        function fetchSchedule() {
-            var xhr = new XMLHttpRequest();
-            xhr.open('POST', SCHEDULE_API, true);
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            xhr.onload = function() {
-                if (xhr.status === 200) {
-                    var resp = JSON.parse(xhr.responseText);
-                    var programs = resp.data || [];
-                    var nowMins = getCairoMinutesNow();
-                    var currentProgram = null;
-                    var scheduleHtml = '';
-
-                    for (var i = 0; i < programs.length; i++) {
-                        var p = programs[i];
-                        var fromMins = parseTimeToMinutes(p.fromTime);
-                        var toMins = parseTimeToMinutes(p.toTime);
-                        var isCurrent = false;
-
-                        if (fromMins >= 0 && toMins >= 0) {
-                            if (toMins <= fromMins) {
-                                // Overnight: e.g. 11PM - 1AM
-                                isCurrent = (nowMins >= fromMins || nowMins < toMins);
-                            } else {
-                                isCurrent = (nowMins >= fromMins && nowMins < toMins);
-                            }
-                            if (isCurrent) currentProgram = p;
-                        }
-
-                        scheduleHtml +=
-                            '<div class="schedule-item' + (isCurrent ? ' active' : '') + '"' +
-                            (isCurrent ? ' id="currentProgram"' : '') + '>' +
-                            '<span class="time">' + p.fromTime + ' - ' + p.toTime + '</span>' +
-                            '<span class="prog-title">' + p.title + '</span>' +
-                            '<span class="live-badge">الآن</span>' +
-                            '</div>';
-                    }
-
-                    scheduleListEl.innerHTML = scheduleHtml;
-
-                    var currentEl = document.getElementById('currentProgram');
-                    if (currentEl) {
-                        currentEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
-                    }
-
-                    var mainTitle = document.getElementById('mainTitle');
-                    var mainSubtitle = document.getElementById('mainSubtitle');
-                    if (currentProgram) {
-                        mainTitle.innerHTML = '<span style="font-size:26px;color:#4ecdc4;display:block;margin-bottom:8px">يعرض الآن</span>' + currentProgram.title;
-                        mainSubtitle.textContent = currentProgram.fromTime + ' - ' + currentProgram.toTime;
-                    } else {
-                        mainTitle.textContent = 'إذاعة القرآن الكريم من القاهرة';
-                        mainSubtitle.textContent = 'Holy Quran Radio - Cairo';
-                    }
-                }
-            };
-            xhr.send(JSON.stringify({Date: null}));
-        }
-
-        fetchSchedule();
-        setInterval(fetchSchedule, 60000);
-
-        // Prayer Times
-        var PRAYER_API_BASE = 'https://API.misrquran.gov.eg/api/PrayerTimes/GetTodaysTimes';
-        var prayerGridEl = document.getElementById('prayerGrid');
-        var hijriDateEl = document.getElementById('hijriDate');
-        var locationNameEl = document.getElementById('locationName');
-        var locationBtn = document.getElementById('locationBtn');
-
-        // Location state
-        var currentLocation = { lat: 30.0444, lng: 31.2357, name: 'القاهرة', utcOffset: 2 };
-        var useMyLocation = false;
-
-        var prayerNames = [
-            { key: 'fajr', name: 'الفجر' },
-            { key: 'sunrise', name: 'الشروق' },
-            { key: 'dhuhr', name: 'الظهر' },
-            { key: 'asr', name: 'العصر' },
-            { key: 'maghrib', name: 'المغرب' },
-            { key: 'isha', name: 'العشاء' }
-        ];
-
-        // Format "HH:MM" (24h) to "H:MM AM/PM"
-        function formatTo12h(time24) {
-            var parts = time24.split(':');
-            var h = parseInt(parts[0]);
-            var m = parts[1];
-            var ampm = h >= 12 ? 'PM' : 'AM';
-            var h12 = h % 12 || 12;
-            return h12 + ':' + m + ' ' + ampm;
-        }
-
-        function getNextPrayer(data) {
-            var now = new Date();
-            var nowMinutes;
-            if (useMyLocation) {
-                nowMinutes = now.getHours() * 60 + now.getMinutes();
-            } else {
-                var cn = getCairoNow();
-                nowMinutes = cn.getHours() * 60 + cn.getMinutes();
-            }
-
-            for (var i = 0; i < prayerNames.length; i++) {
-                var key = prayerNames[i].key;
-                if (!data[key]) continue;
-                var parts = data[key].split(':');
-                var prayerMinutes = parseInt(parts[0]) * 60 + parseInt(parts[1]);
-                if (prayerMinutes > nowMinutes) return key;
-            }
-            return 'fajr';
-        }
-
-        // Reverse geocode to get city name
-        function fetchLocationName(lat, lng) {
-            var xhr = new XMLHttpRequest();
-            xhr.open('GET', 'https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lng + '&format=json&accept-language=ar', true);
-            xhr.onload = function() {
-                if (xhr.status === 200) {
-                    var data = JSON.parse(xhr.responseText);
-                    var city = data.address.city || data.address.town || data.address.county || data.address.state || '';
-                    var country = data.address.country || '';
-                    if (city && country) {
-                        currentLocation.name = city + '، ' + country;
-                    } else if (country) {
-                        currentLocation.name = country;
-                    }
-                    locationNameEl.textContent = currentLocation.name;
-                }
-            };
-            xhr.send();
-        }
-
-        function getLocalUtcOffset() {
-            // Use the browser's actual timezone offset (accounts for DST)
-            return -(new Date().getTimezoneOffset()) / 60;
-        }
-
-        locationBtn.addEventListener('click', function() {
-            if (useMyLocation) {
-                // Switch back to Cairo
-                useMyLocation = false;
-                currentLocation = { lat: 30.0444, lng: 31.2357, name: 'القاهرة', utcOffset: 2 };
-                locationNameEl.textContent = currentLocation.name;
-                locationBtn.textContent = 'موقعي';
-                azanTriggered = {};
-                fetchPrayerTimes();
-            } else {
-                // Try geolocation
-                locationBtn.textContent = '...';
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(function(pos) {
-                        useMyLocation = true;
-                        var lat = pos.coords.latitude;
-                        var lng = pos.coords.longitude;
-                        currentLocation.lat = lat;
-                        currentLocation.lng = lng;
-                        currentLocation.utcOffset = getLocalUtcOffset();
-                        currentLocation.name = 'موقعي';
-                        locationNameEl.textContent = currentLocation.name;
-                        locationBtn.textContent = 'القاهرة';
-                        azanTriggered = {};
-                        fetchLocationName(lat, lng);
-                        fetchPrayerTimes();
-                    }, function() {
-                        // Geolocation denied/failed - fallback to Stockholm
-                        useMyLocation = true;
-                        currentLocation = { lat: 59.3293, lng: 18.0686, name: 'ستوكهولم، السويد', utcOffset: 2 };
-                        locationNameEl.textContent = currentLocation.name;
-                        locationBtn.textContent = 'القاهرة';
-                        azanTriggered = {};
-                        fetchPrayerTimes();
-                    });
-                } else {
-                    // No geolocation - fallback to Stockholm
-                    useMyLocation = true;
-                    currentLocation = { lat: 59.3293, lng: 18.0686, name: 'ستوكهولم، السويد', utcOffset: 2 };
-                    locationNameEl.textContent = currentLocation.name;
-                    locationBtn.textContent = 'القاهرة';
-                    azanTriggered = {};
-                    fetchPrayerTimes();
-                }
-            }
-        });
-
-        // Azan player
-        var azanAudio = new Audio('azan.mp3');
-        var azanPlaying = false;
-        var wasPlayingBeforeAzan = false;
-        var azanTriggered = {};
-        var azanPrayers = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
-        var cachedPrayerData = null;
-
-        azanAudio.addEventListener('ended', function() {
-            azanPlaying = false;
-            statusEl.textContent = playing ? 'Live' : 'Press to play';
-            statusEl.className = playing ? 'status live' : 'status';
-            if (wasPlayingBeforeAzan) {
-                startPlayback(STREAM_URL);
-            }
-        });
-
-        function playAzan() {
-            azanPlaying = true;
-            wasPlayingBeforeAzan = playing;
-            if (playing) {
-                if (hls) { hls.destroy(); hls = null; }
-                audio.pause();
-                audio.src = '';
-            }
-            statusEl.textContent = 'الأذان';
-            statusEl.className = 'status live';
-            azanAudio.currentTime = 0;
-            azanAudio.play();
-        }
-
-        function checkAzanTime() {
-            if (!cachedPrayerData || azanPlaying) return;
-            // For Cairo use Cairo time, for my location use local time
-            var now;
-            if (useMyLocation) {
-                now = new Date();
-            } else {
-                now = getCairoNow();
-            }
-            var nowH = now.getHours();
-            var nowM = now.getMinutes();
-            var todayKey = now.toDateString();
-
-            if (azanTriggered._day !== todayKey) {
-                azanTriggered = { _day: todayKey };
-            }
-
-            for (var i = 0; i < azanPrayers.length; i++) {
-                var key = azanPrayers[i];
-                if (azanTriggered[key]) continue;
-                var timeStr = cachedPrayerData[key];
-                if (!timeStr) continue;
-                var parts = timeStr.split(':');
-                var pH = parseInt(parts[0]);
-                var pM = parseInt(parts[1]);
-                if (nowH === pH && nowM === pM) {
-                    azanTriggered[key] = true;
-                    playAzan();
-                    break;
-                }
-            }
-        }
-
-        // Normalize misrquran UTC times to Cairo local 24h "HH:MM"
-        function misrqToLocal(utcTime) {
-            var parts = utcTime.split(':');
-            var h = (parseInt(parts[0]) + 2 + 24) % 24;
-            var m = parts[1];
-            return (h < 10 ? '0' : '') + h + ':' + m;
-        }
-
-        function fetchPrayerTimes() {
-            var xhr = new XMLHttpRequest();
-            if (useMyLocation) {
-                // Aladhan API - returns local times, method 4 = Umm al-Qura
-                var url = 'https://api.aladhan.com/v1/timings?latitude=' + currentLocation.lat + '&longitude=' + currentLocation.lng + '&method=4';
-                xhr.open('GET', url, true);
-                xhr.onload = function() {
-                    if (xhr.status === 200) {
-                        var resp = JSON.parse(xhr.responseText);
-                        var timings = resp.data.timings;
-                        var hijri = resp.data.date.hijri;
-                        // Normalize to our format (lowercase keys, "HH:MM")
-                        cachedPrayerData = {
-                            fajr: timings.Fajr,
-                            sunrise: timings.Sunrise,
-                            dhuhr: timings.Dhuhr,
-                            asr: timings.Asr,
-                            maghrib: timings.Maghrib,
-                            isha: timings.Isha
-                        };
-                        hijriDateEl.textContent = hijri.day + ' ' + hijri.month.ar + ' ' + hijri.year + ' هـ';
-                        renderPrayerGrid();
-                    }
-                };
-            } else {
-                // misrquran API for Cairo - returns UTC times
-                var url = PRAYER_API_BASE + '?lat=30.0444&lng=31.2357&dayLightSaving=false';
-                xhr.open('GET', url, true);
-                xhr.onload = function() {
-                    if (xhr.status === 200) {
-                        var data = JSON.parse(xhr.responseText);
-                        // Convert UTC to Cairo local
-                        cachedPrayerData = {
-                            fajr: misrqToLocal(data.fajr),
-                            sunrise: misrqToLocal(data.sunrise),
-                            dhuhr: misrqToLocal(data.dhuhr),
-                            asr: misrqToLocal(data.asr),
-                            maghrib: misrqToLocal(data.maghrib),
-                            isha: misrqToLocal(data.isha)
-                        };
-                        if (data.hijriDate) hijriDateEl.textContent = data.hijriDate;
-                        renderPrayerGrid();
-                    }
-                };
-            }
-            xhr.send();
-        }
-
-        function renderPrayerGrid() {
-            var nextPrayer = getNextPrayer(cachedPrayerData);
-            var html = '';
-            for (var i = 0; i < prayerNames.length; i++) {
-                var p = prayerNames[i];
-                var timeVal = cachedPrayerData[p.key] ? formatTo12h(cachedPrayerData[p.key]) : '--';
-                var isNext = p.key === nextPrayer;
-                html += '<div class="prayer-item' + (isNext ? ' next' : '') + '">' +
-                    '<div class="prayer-name">' + p.name + '</div>' +
-                    '<div class="prayer-time-val">' + timeVal + '</div>' +
-                    '</div>';
-            }
-            prayerGridEl.innerHTML = html;
-        }
-
-        fetchPrayerTimes();
-        setInterval(fetchPrayerTimes, 300000);
-        setInterval(checkAzanTime, 30000);
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>
