@@ -108,100 +108,272 @@ button:focus {
 }
 .schedule-item.active .live-badge { display: inline-block; }
 
-/* Current program progress bar */
-.schedule-item.active .prog-progress {
-    display: block;
-    height: 4px;
-    background: rgba(231, 76, 60, 0.2);
-    border-radius: 2px;
-    margin-top: 6px;
-    overflow: hidden;
-    position: relative;
-    width: 100%;
-}
-.schedule-item .prog-progress { display: none; }
-.schedule-item .prog-progress-bar {
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    background: #e74c3c;
-    transition: width 1s linear;
-}
-.schedule-item.active .prog-meta {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    gap: 4px;
-}
-.schedule-item .prog-meta { display: block; flex: 1; }
+.schedule-item .prog-meta { flex: 1; }
 
-/* ============ Right panel: Player ============ */
+/* ============ Right panel ============ */
 .player-panel {
     width: 55%;
     height: calc(100vh - 60px);
     display: flex;
     flex-direction: column;
-    align-items: center;
+}
+
+/* ---- Prayer strip (top bar) ---- */
+.prayer-strip {
+    padding: 20px 20px 15px;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+    flex: 1;
+    direction: rtl;
+    display: flex;
+    flex-direction: column;
     justify-content: center;
 }
-.player-container {
+
+/* Next prayer banner */
+.prayer-next-banner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.current-time-display {
+    font-size: 80px;
+    color: #d4af37;
+    direction: ltr;
+    font-variant-numeric: tabular-nums;
+    font-weight: bold;
+    width: 100%;
+    text-align: center;
+    margin-bottom: 4px;
+}
+.hijri-date-banner {
+    font-size: 28px;
+    color: #8899aa;
+    width: 100%;
+    text-align: center;
+    margin-bottom: 6px;
+}
+.next-salah-text {
+    font-size: 40px;
+    color: #e74c3c;
+    width: 100%;
     text-align: center;
 }
-.title {
-    font-size: 52px;
-    margin-bottom: 10px;
-    color: #d4af37;
+.next-salah-banner-bar {
+    width: 200px;
+    height: 4px;
+    background: linear-gradient(90deg, transparent 0%, #e74c3c 50%, transparent 100%);
+    border-radius: 2px;
+    margin: 8px auto;
+}
+.next-salah-bar {
+    height: 4px;
+    background: rgba(231, 76, 60, 0.15);
+    border-radius: 2px;
+    overflow: hidden;
+    width: 60%;
+    max-width: 400px;
+}
+.next-salah-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4ecdc4 0%, #e74c3c 100%);
+    transition: width 1s linear;
+    border-radius: 2px;
+}
+
+/* Prayer times row: each time stacked vertically (name on top, big time below) */
+.prayer-strip-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+.prayer-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: opacity 0.3s ease;
+    width: 100%;
+}
+.prayer-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 16px;
+    transition: all 0.3s;
     direction: rtl;
-    transition: opacity 0.3s ease;
 }
-.subtitle {
-    font-size: 26px;
+.prayer-item.next {
+    background: rgba(78, 205, 196, 0.08);
+}
+.prayer-item.muted { opacity: 0.4; }
+.prayer-name {
+    font-size: 32px;
     color: #8899aa;
-    margin-bottom: 40px;
-    transition: opacity 0.3s ease;
+    direction: rtl;
 }
-.play-btn {
-    width: 140px;
-    height: 140px;
+.prayer-item.next .prayer-name { color: #4ecdc4; }
+.prayer-time-val {
+    font-size: 32px;
+    color: #d4af37;
+    direction: ltr;
+}
+
+/* Info + actions on the sides */
+.prayer-strip-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-shrink: 0;
+    min-width: 100px;
+}
+.prayer-strip-label { font-size: 28px; color: #556677; }
+.prayer-strip-hijri { font-size: 28px; color: #8899aa; }
+.prayer-strip-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.location-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.location-name { font-size: 32px; color: #8899aa; }
+.location-btn,
+.settings-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    color: #d4af37;
+    padding: 6px 14px;
+    border-radius: 12px;
+    font-size: 30px;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s;
+}
+.location-btn:hover, .location-btn.focused,
+.settings-btn:hover, .settings-btn.focused {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: #d4af37;
+}
+
+/* ---- Now-playing area (main content) - 2x2 Grid ---- */
+.now-playing-area {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    gap: 20px;
+    row-gap: 30px;
+    padding: 20px 25px 30px;
+    direction: rtl;
+    border-top: 1px solid rgba(212, 175, 55, 0.1);
+    align-items: center;
+}
+.now-thumbnail {
+    width: 195px;
+    height: 195px;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    background: rgba(255, 255, 255, 0.03);
+    border: 2px solid rgba(212, 175, 55, 0.15);
+}
+.now-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.now-thumbnail-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(212, 175, 55, 0.05);
+}
+.play-overlay-btn {
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
-    border: 4px solid #d4af37;
+    border: 3px solid #d4af37;
     background: rgba(212, 175, 55, 0.1);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 25px;
     transition: all 0.3s ease;
     outline: none;
+    flex-shrink: 0;
 }
-.play-btn:hover,
-.play-btn.focused {
-    background: rgba(212, 175, 55, 0.25);
-    transform: scale(1.08);
-    box-shadow: 0 0 40px rgba(212, 175, 55, 0.5);
+.play-overlay-btn:hover, .play-overlay-btn.focused {
+    background: rgba(212, 175, 55, 0.3);
+    transform: scale(1.1);
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.5);
 }
-.play-btn.playing {
+.play-overlay-btn.playing {
     border-color: #e74c3c;
-    background: rgba(231, 76, 60, 0.1);
+    background: rgba(231, 76, 60, 0.15);
     animation: pulse 2s infinite;
 }
-.play-btn.playing:hover,
-.play-btn.playing.focused {
-    background: rgba(231, 76, 60, 0.25);
-    box-shadow: 0 0 40px rgba(231, 76, 60, 0.5);
+.play-overlay-btn.playing:hover, .play-overlay-btn.playing.focused {
+    background: rgba(231, 76, 60, 0.4);
+    box-shadow: 0 0 30px rgba(231, 76, 60, 0.5);
 }
 .icon-play {
     width: 0; height: 0;
-    border-top: 30px solid transparent;
-    border-bottom: 30px solid transparent;
-    border-left: 50px solid #d4af37;
-    margin-left: 10px;
+    border-top: 14px solid transparent;
+    border-bottom: 14px solid transparent;
+    border-left: 24px solid #d4af37;
+    margin-left: 4px;
 }
 .icon-stop {
-    width: 48px; height: 48px;
+    width: 22px; height: 22px;
     background: #e74c3c;
-    border-radius: 8px;
+    border-radius: 4px;
+}
+.now-progress {
+    width: 100%;
+    height: 8px;
+    background: rgba(212, 175, 55, 0.12);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.now-progress-cell {
+    width: 100%;
+    height: 8px;
+    background: rgba(212, 175, 55, 0.12);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.now-controls-cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.now-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #d4af37 0%, #e74c3c 100%);
+    border-radius: 4px;
+    transition: width 1s linear;
+}
+.now-info {
+    text-align: right;
+}
+.title {
+    font-size: 42px;
+    margin-bottom: 6px;
+    color: #d4af37;
+    direction: rtl;
+    transition: opacity 0.3s ease;
+}
+.subtitle {
+    font-size: 32px;
+    color: #8899aa;
+    margin-bottom: 15px;
+    transition: opacity 0.3s ease;
 }
 .status {
     font-size: 22px;
@@ -209,139 +381,6 @@ button:focus {
     min-height: 24px;
 }
 .status.live { color: #e74c3c; }
-
-/* ============ Prayer section ============ */
-.prayer-section {
-    margin-top: 30px;
-    width: 100%;
-    max-width: 520px;
-}
-.prayer-header {
-    direction: rtl;
-    font-size: 36px;
-    color: #d4af37;
-    margin-bottom: 10px;
-    text-align: center;
-}
-.prayer-tz-label {
-    direction: rtl;
-    font-size: 20px;
-    color: #556677;
-    margin-bottom: 8px;
-    text-align: center;
-}
-.prayer-hijri {
-    direction: rtl;
-    font-size: 26px;
-    color: #8899aa;
-    margin-bottom: 12px;
-    text-align: center;
-}
-.prayer-grid {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-    flex-wrap: wrap;
-    transition: opacity 0.3s ease;
-}
-.prayer-item {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(212, 175, 55, 0.12);
-    border-radius: 10px;
-    padding: 10px 14px;
-    text-align: center;
-    min-width: 75px;
-    transition: all 0.3s;
-}
-.prayer-item.next {
-    border-color: rgba(78, 205, 196, 0.4);
-    background: rgba(78, 205, 196, 0.08);
-}
-.prayer-item.muted {
-    opacity: 0.4;
-}
-.prayer-name {
-    font-size: 26px;
-    color: #8899aa;
-    margin-bottom: 4px;
-    direction: rtl;
-}
-.prayer-item.next .prayer-name { color: #4ecdc4; }
-.prayer-time-val {
-    font-size: 30px;
-    color: #d4af37;
-    direction: ltr;
-}
-
-.prayer-location {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 10px;
-    direction: rtl;
-}
-.location-name {
-    font-size: 36px;
-    color: #8899aa;
-}
-/* Shared action button (location, settings, etc.) */
-.location-btn,
-.settings-btn {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(212, 175, 55, 0.25);
-    color: #d4af37;
-    padding: 8px 20px;
-    border-radius: 15px;
-    font-size: 30px;
-    cursor: pointer;
-    outline: none;
-    transition: all 0.3s;
-}
-.location-btn:hover,
-.location-btn.focused,
-.settings-btn:hover,
-.settings-btn.focused {
-    background: rgba(212, 175, 55, 0.15);
-    border-color: #d4af37;
-}
-.settings-btn { margin-inline-start: 8px; }
-
-/* Next salah countdown visual ring */
-.next-salah-container {
-    direction: rtl;
-    text-align: center;
-    margin-bottom: 12px;
-}
-.next-salah-text {
-    font-size: 22px;
-    color: #e74c3c;
-    margin-bottom: 6px;
-}
-.next-salah-bar {
-    height: 6px;
-    background: rgba(231, 76, 60, 0.15);
-    border-radius: 3px;
-    overflow: hidden;
-    max-width: 400px;
-    margin: 0 auto;
-}
-.next-salah-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #4ecdc4 0%, #e74c3c 100%);
-    transition: width 1s linear;
-    border-radius: 3px;
-}
-
-/* Clock */
-.current-time-display {
-    font-size: 28px;
-    color: #d4af37;
-    margin-bottom: 4px;
-    direction: ltr;
-    text-align: center;
-    font-variant-numeric: tabular-nums;
-}
 
 /* ============ Toast notifications ============ */
 .toast {
@@ -484,6 +523,42 @@ button:focus {
     align-items: center;
     justify-content: center;
     flex-direction: column;
+}
+
+/* Prayer countdown banner (shows 30 min before prayer) */
+.prayer-countdown-banner {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.95) 0%, rgba(180, 145, 40, 0.95) 100%);
+    padding: 15px 40px;
+    border-radius: 50px;
+    display: none;
+    align-items: center;
+    gap: 15px;
+    z-index: 9995;
+    box-shadow: 0 8px 30px rgba(212, 175, 55, 0.4);
+    animation: slideDown 0.5s ease;
+}
+.prayer-countdown-banner.visible {
+    display: flex;
+}
+.countdown-icon {
+    font-size: 32px;
+}
+.countdown-text {
+    font-size: 26px;
+    color: #0a1628;
+    font-weight: bold;
+}
+.countdown-time {
+    font-size: 28px;
+    color: #fff;
+    background: rgba(10, 22, 40, 0.3);
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-weight: bold;
 }
 
 /* Pre-azan warning strip */

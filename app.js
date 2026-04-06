@@ -451,9 +451,7 @@
                 }
                 if (isCurrent) { currentProgram = p; state.currentProgramIdx = i; }
             }
-            const imgHtml = p.imageURL
-                ? '<img class="prog-img" src="' + escapeHtml(p.imageURL) + '" onerror="this.style.display=\'none\'" alt="">'
-                : '';
+            const imgHtml = '';
             parts.push(
                 '<div class="schedule-item' + (isCurrent ? ' active' : '') + '"' +
                 (isCurrent ? ' id="currentProgram"' : '') + ' role="listitem">' +
@@ -461,9 +459,6 @@
                 '<div class="prog-meta">' +
                 '<span class="time">' + escapeHtml(arabizeTime(p.fromTime)) + ' - ' + escapeHtml(arabizeTime(p.toTime)) + '</span>' +
                 '<span class="prog-title">' + escapeHtml(p.title) + '</span>' +
-                (isCurrent
-                    ? '<div class="prog-progress"><div class="prog-progress-bar" id="progBar" style="width:0%"></div></div>'
-                    : '') +
                 '</div>' +
                 '<span class="live-badge">الآن</span>' +
                 '</div>'
@@ -484,14 +479,31 @@
     }
 
     function updateMainTitle(currentProgram) {
+        const thumbImg = $('nowThumbnailImg');
+        const thumbPlaceholder = $('nowThumbnailPlaceholder');
         if (currentProgram) {
             els.mainTitle.innerHTML =
                 '<span style="font-size:26px;color:#e74c3c;display:block;margin-bottom:8px">يعرض الآن</span>' +
                 escapeHtml(currentProgram.title);
             els.mainSubtitle.textContent = arabizeTime(currentProgram.fromTime) + ' - ' + arabizeTime(currentProgram.toTime);
+            // Update thumbnail
+            if (thumbImg && currentProgram.imageURL && currentProgram.imageURL !== 'null') {
+                thumbImg.src = currentProgram.imageURL;
+                thumbImg.style.display = 'block';
+                if (thumbPlaceholder) thumbPlaceholder.style.display = 'none';
+                thumbImg.onerror = function () {
+                    thumbImg.style.display = 'none';
+                    if (thumbPlaceholder) thumbPlaceholder.style.display = 'flex';
+                };
+            } else {
+                if (thumbImg) thumbImg.style.display = 'none';
+                if (thumbPlaceholder) thumbPlaceholder.style.display = 'flex';
+            }
         } else {
             els.mainTitle.textContent = 'إذاعة القرآن الكريم من القاهرة';
             els.mainSubtitle.textContent = 'Holy Quran Radio - Cairo';
+            if (thumbImg) thumbImg.style.display = 'none';
+            if (thumbPlaceholder) thumbPlaceholder.style.display = 'flex';
         }
     }
 
@@ -1001,6 +1013,9 @@
     let lastClockText = '';
     let lastNextSalahText = '';
     let lastNextSalahPct = -1;
+    let lastCountdownText = '';
+
+    const COUNTDOWN_BANNER_MINUTES = 30; // Show banner when prayer is within 30 min
 
     function updateClock() {
         const hm = getLocationNowHM();
@@ -1041,6 +1056,39 @@
         if (Math.abs(pct - lastNextSalahPct) > 0.5) {
             els.nextSalahBarFill.style.width = pct + '%';
             lastNextSalahPct = pct;
+        }
+
+        // Update countdown banner (shows when prayer is within COUNTDOWN_BANNER_MINUTES)
+        updateCountdownBanner(nextKey, diff);
+    }
+
+    function updateCountdownBanner(prayerKey, minutesLeft) {
+        if (!els.prayerCountdownBanner) return;
+        
+        // Show banner when prayer is within COUNTDOWN_BANNER_MINUTES but not during azan
+        if (minutesLeft > 0 && minutesLeft <= COUNTDOWN_BANNER_MINUTES && !state.azanPlaying) {
+            const prayerName = prayerNamesAr[prayerKey] || '';
+            const diffH = Math.floor(minutesLeft / 60);
+            const diffM = minutesLeft % 60;
+            const timeText = diffH > 0 
+                ? toArabicDigits(diffH + ' ساعة ' + diffM + ' دقيقة')
+                : toArabicDigits(diffM + ' دقيقة');
+            
+            const countdownText = 'صلاة ' + prayerName;
+            if (countdownText !== lastCountdownText) {
+                els.countdownText.textContent = countdownText;
+                lastCountdownText = countdownText;
+            }
+            els.countdownTime.textContent = timeText;
+            els.prayerCountdownBanner.classList.add('visible');
+            
+            // Hide when very close to prayer (pre-azan will take over)
+            if (minutesLeft <= PRE_AZAN_MINUTES) {
+                els.prayerCountdownBanner.classList.remove('visible');
+            }
+        } else {
+            els.prayerCountdownBanner.classList.remove('visible');
+            lastCountdownText = '';
         }
     }
 
@@ -1446,6 +1494,9 @@
             azanOverlay: $('azanOverlay'),
             azanOverlayText: $('azanOverlayText'),
             preAzanOverlay: $('preAzanOverlay'),
+            prayerCountdownBanner: $('prayerCountdownBanner'),
+            countdownText: $('countdownText'),
+            countdownTime: $('countdownTime'),
             dimBackdrop: $('dimBackdrop'),
             toast: $('toast'),
             toastTitle: $('toastTitle'),
@@ -1458,19 +1509,6 @@
             dialogNo: $('dialogNo'),
             settingsMenu: $('settingsMenu')
         };
-
-        // Start keep-alive video to prevent webOS screen saver
-        const keepAliveVideo = $('keepAliveVideo');
-        if (keepAliveVideo) {
-            const tryPlay = function () {
-                const p = keepAliveVideo.play();
-                if (p && p.catch) p.catch(function () {
-                    // Retry after user interaction if autoplay was blocked
-                    setTimeout(tryPlay, 2000);
-                });
-            };
-            tryPlay();
-        }
 
         // Initialize audio
         state.audio = document.createElement('audio');

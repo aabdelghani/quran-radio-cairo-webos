@@ -14,11 +14,6 @@
         <div class="loading-dots">جاري التحميل ...</div>
     </div>
 
-    <!-- Hidden keep-alive video (prevents webOS screen saver while audio plays) -->
-    <video id="keepAliveVideo" src="keep_alive.mp4" muted loop playsinline
-        style="position:fixed;bottom:0;left:0;width:2px;height:2px;opacity:0.01;pointer-events:none;z-index:-1"
-        aria-hidden="true"></video>
-
     <!-- Offline banner -->
     <div class="offline-banner" id="offlineBanner" role="alert">
         لا يوجد اتصال بالإنترنت
@@ -26,6 +21,13 @@
 
     <!-- Dim backdrop shown behind overlays -->
     <div class="dim-backdrop" id="dimBackdrop" aria-hidden="true"></div>
+
+    <!-- Prayer countdown banner (shows when next prayer is approaching) -->
+    <div class="prayer-countdown-banner" id="prayerCountdownBanner" role="status" aria-live="polite">
+        <div class="countdown-icon">🕐</div>
+        <div class="countdown-text" id="countdownText"></div>
+        <div class="countdown-time" id="countdownTime"></div>
+    </div>
 
     <!-- Pre-azan notification -->
     <div class="pre-azan-overlay" id="preAzanOverlay" role="status" aria-live="polite"></div>
@@ -66,31 +68,51 @@
         <div class="schedule-list" id="scheduleList" role="list" aria-live="polite"></div>
     </section>
 
-    <!-- Right: Player -->
+    <!-- Right: Player + Prayer -->
     <section class="player-panel" aria-label="المشغل ومواقيت الصلاة">
-        <div class="player-container">
-            <h1 class="title" id="mainTitle" aria-live="polite">إذاعة القرآن الكريم من القاهرة</h1>
-            <div class="subtitle" id="mainSubtitle">Holy Quran Radio - Cairo</div>
-            <button class="play-btn focusable" id="playBtn" aria-label="تشغيل / إيقاف" aria-pressed="false" autofocus>
-                <div class="icon-play" id="btnIcon"></div>
-            </button>
-            <div class="status" id="status" role="status" aria-live="polite">Press to play</div>
-        </div>
-        <div class="prayer-section" aria-label="مواقيت الصلاة">
-            <h2 class="prayer-header">مواقيت الصلاة</h2>
-            <div class="prayer-tz-label" id="prayerTzLabel">بتوقيت القاهرة</div>
-            <div class="prayer-location">
-                <span class="location-name" id="locationName">القاهرة</span>
-                <button class="location-btn focusable" id="locationBtn" aria-label="تبديل الموقع">موقعي</button>
-                <button class="settings-btn focusable" id="settingsBtn" aria-label="الإعدادات">⚙</button>
-            </div>
-            <div class="prayer-hijri" id="hijriDate"></div>
-            <div class="current-time-display" id="currentTimeDisplay" aria-live="off"></div>
-            <div class="next-salah-container">
+        <!-- Top: Prayer times strip -->
+        <div class="prayer-strip" aria-label="مواقيت الصلاة">
+            <!-- Next prayer banner -->
+            <div class="prayer-next-banner">
                 <div class="next-salah-text" id="nextSalahText"></div>
-                <div class="next-salah-bar"><div class="next-salah-bar-fill" id="nextSalahBarFill"></div></div>
+                <div class="next-salah-banner-bar"></div>
+                <div class="current-time-display" id="currentTimeDisplay" aria-live="off"></div>
+                <span class="hijri-date-banner" id="hijriDate"></span>
+                <div class="location-controls">
+                    <span class="location-name" id="locationName">القاهرة</span>
+                    <button class="location-btn focusable" id="locationBtn" aria-label="تبديل الموقع">موقعي</button>
+                    <button class="settings-btn focusable" id="settingsBtn" aria-label="الإعدادات">⚙</button>
+                </div>
             </div>
-            <div class="prayer-grid" id="prayerGrid" role="list" aria-live="polite"></div>
+            <!-- Prayer times row -->
+            <div class="prayer-strip-row">
+                <div class="prayer-grid" id="prayerGrid" role="list" aria-live="polite"></div>
+            </div>
+        </div>
+
+        <!-- Main: 2x2 Grid layout -->
+        <div class="now-playing-area">
+            <!-- (0,0): Thumbnail -->
+            <div class="now-thumbnail" id="nowThumbnail">
+                <img id="nowThumbnailImg" src="" alt="" style="display:none">
+                <div class="now-thumbnail-placeholder" id="nowThumbnailPlaceholder"></div>
+            </div>
+            <!-- (0,1): Now viewing info -->
+            <div class="now-info">
+                <h1 class="title" id="mainTitle" aria-live="polite">إذاعة القرآن الكريم من القاهرة</h1>
+                <div class="subtitle" id="mainSubtitle">Holy Quran Radio - Cairo</div>
+                <div class="status" id="status" role="status" aria-live="polite">اضغط للتشغيل</div>
+            </div>
+            <!-- (1,0): Play button -->
+            <div class="now-controls-cell">
+                <button class="play-overlay-btn focusable" id="playBtn" aria-label="تشغيل / إيقاف" aria-pressed="false" autofocus>
+                    <div class="icon-play" id="btnIcon"></div>
+                </button>
+            </div>
+            <!-- (1,1): Progress bar -->
+            <div class="now-progress-cell">
+                <div class="now-progress-bar" id="progBar" style="width:0%"></div>
+            </div>
         </div>
     </section>
 
