@@ -285,7 +285,9 @@ button:focus {
     font-size: 36px;
     color: #8899aa;
 }
-.location-btn {
+/* Shared action button (location, settings, etc.) */
+.location-btn,
+.settings-btn {
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(212, 175, 55, 0.25);
     color: #d4af37;
@@ -297,29 +299,13 @@ button:focus {
     transition: all 0.3s;
 }
 .location-btn:hover,
-.location-btn.focused {
-    background: rgba(212, 175, 55, 0.15);
-    border-color: #d4af37;
-}
-
-/* Settings button */
-.settings-btn {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(212, 175, 55, 0.25);
-    color: #d4af37;
-    padding: 8px 20px;
-    border-radius: 15px;
-    font-size: 30px;
-    cursor: pointer;
-    outline: none;
-    transition: all 0.3s;
-    margin-right: 8px;
-}
+.location-btn.focused,
 .settings-btn:hover,
 .settings-btn.focused {
     background: rgba(212, 175, 55, 0.15);
     border-color: #d4af37;
 }
+.settings-btn { margin-inline-start: 8px; }
 
 /* Next salah countdown visual ring */
 .next-salah-container {
@@ -527,6 +513,21 @@ button:focus {
     height: 60px;
     margin-bottom: 10px;
 }
+.skeleton-prayer-item {
+    width: 75px;
+    height: 80px;
+}
+.error-msg {
+    padding: 30px;
+    text-align: center;
+    color: #8899aa;
+    font-size: 22px;
+    width: 100%;
+}
+.error-msg-small {
+    padding: 20px;
+    font-size: 20px;
+}
 @keyframes skeletonPulse {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
@@ -680,10 +681,6 @@ button:focus {
     transform: scale(1.03);
     border-color: #d4af37;
     color: #d4af37;
-}
-@keyframes slideInRight {
-    from { transform: translateX(100%); }
-    to { transform: translateX(0); }
 }
 @keyframes slideInFromRightEdge {
     from { transform: translateX(100%); opacity: 0; }

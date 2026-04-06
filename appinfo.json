@@ -1,10 +1,11 @@
 {
   "id": "misrquran.radio",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "vendor": "Quran Radio",
   "type": "web",
   "main": "index.html",
   "title": "Quran Radio Cairo",
   "icon": "icon.png",
-  "largeIcon": "largeIcon.png"
+  "largeIcon": "largeIcon.png",
+  "bgColor": "#0f1e38"
 }

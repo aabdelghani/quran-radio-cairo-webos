@@ -56,16 +56,24 @@
     const MAX_RESPONSE_SIZE = 2 * 1024 * 1024; // 2 MB
     const PRE_AZAN_MINUTES = 5;
     const SCHEDULE_POLL_MS = 60 * 1000;
-    const PRAYER_POLL_MS = 5 * 60 * 1000;
     const AZAN_CHECK_MS = 30 * 1000;
-    const CLOCK_MS = 1000;
-    const DAILY_RESET_MS = 60 * 1000;
     const PROGRESS_UPDATE_MS = 30 * 1000;
 
     const MUEZZINS = {
         naqshbandi: { file: 'azan_naqshbandi.mp3', name: 'الشيخ سيد النقشبندي' },
         ismail: { file: 'azan_ismail.mp3', name: 'الشيخ مصطفى إسماعيل' },
         refaat: { file: 'azan_refaat.mp3', name: 'الشيخ محمد رفعت' }
+    };
+
+    // UI status strings (deduplicated)
+    const STATUS = {
+        READY: 'Press to play',
+        CONNECTING: 'Connecting...',
+        BUFFERING: 'Buffering...',
+        LIVE: 'Live',
+        AZAN: 'الأذان - Paused for prayer',
+        DUA: 'الدعاء بعد الأذان',
+        STREAM_ERROR: 'خطأ في البث - اضغط للمحاولة'
     };
 
     /* webOS remote key codes */
@@ -249,6 +257,9 @@
         // Data
         cachedPrayerData: null,
         cachedSchedule: null,
+        scheduleHash: '',
+        currentProgramIdx: -1,
+        midnightTimer: null,
 
         // Azan
         azanAudio: null,
@@ -291,14 +302,15 @@
             log.warn('audio.play() rejected:', err && err.name);
             if (err && err.name === 'NotAllowedError') {
                 stopPlayback();
-                els.status.textContent = 'Press to play';
+                els.status.textContent = STATUS.READY;
                 els.status.className = 'status';
                 els.status.setAttribute('aria-label', 'اضغط للتشغيل');
             }
         });
     }
 
-    function stopPlayback() {
+    /** Stop the radio stream without triggering the error handler (used by stop btn and azan). */
+    function pauseRadioSilently() {
         state.stoppingManually = true;
         if (state.hls) { state.hls.destroy(); state.hls = null; }
         try { state.audio.pause(); state.audio.src = ''; } catch (e) {}
@@ -309,10 +321,25 @@
         setTimeout(function () { state.stoppingManually = false; }, 200);
     }
 
+    function stopPlayback() { pauseRadioSilently(); }
+
+    /** Hide azan overlay and either resume the radio or show the idle state. */
+    function resumeAfterAzan() {
+        state.azanPlaying = false;
+        els.azanOverlay.style.display = 'none';
+        setBackdrop(false);
+        if (state.wasPlayingBeforeAzan) {
+            startPlayback(STREAM_URL, 0);
+        } else {
+            els.status.textContent = STATUS.READY;
+            els.status.className = 'status';
+        }
+    }
+
     function startPlayback(url, attempt) {
         attempt = attempt || 0;
         state.retryAttempt = attempt;
-        els.status.textContent = attempt > 0 ? 'إعادة المحاولة...' : 'Connecting...';
+        els.status.textContent = attempt > 0 ? 'إعادة المحاولة...' : STATUS.CONNECTING;
         els.status.className = 'status';
         state.playing = true;
         els.playBtn.classList.add('playing');
@@ -354,7 +381,7 @@
             log.info('Primary stream exhausted, trying fallback');
             startPlayback(FALLBACK_URL, 0);
         } else {
-            els.status.textContent = 'خطأ في البث - اضغط للمحاولة';
+            els.status.textContent = STATUS.STREAM_ERROR;
             els.status.className = 'status';
         }
     }
@@ -362,7 +389,7 @@
     function togglePlayback() {
         if (state.playing) {
             stopPlayback();
-            els.status.textContent = 'Press to play';
+            els.status.textContent = STATUS.READY;
             els.status.className = 'status';
         } else {
             startPlayback(STREAM_URL, 0);
@@ -398,18 +425,18 @@
     }
 
     function renderScheduleError(message) {
-        els.scheduleList.innerHTML =
-            '<div style="padding:30px;text-align:center;color:#8899aa;font-size:22px">' +
-            escapeHtml(message) + '</div>';
+        els.scheduleList.innerHTML = '<div class="error-msg">' + escapeHtml(message) + '</div>';
     }
 
     function renderSchedule(programs) {
         if (!programs || programs.length === 0) {
             renderScheduleError('لا توجد فقرات متاحة اليوم');
+            state.currentProgramIdx = -1;
             return;
         }
         const nowMins = getCairoMinutesNow();
         let currentProgram = null;
+        state.currentProgramIdx = -1;
         const parts = [];
         for (let i = 0; i < programs.length; i++) {
             const p = programs[i];
@@ -422,7 +449,7 @@
                 } else {
                     isCurrent = (nowMins >= fromMins && nowMins < toMins);
                 }
-                if (isCurrent) currentProgram = p;
+                if (isCurrent) { currentProgram = p; state.currentProgramIdx = i; }
             }
             const imgHtml = p.imageURL
                 ? '<img class="prog-img" src="' + escapeHtml(p.imageURL) + '" onerror="this.style.display=\'none\'" alt="">'
@@ -484,6 +511,17 @@
         bar.style.width = pct + '%';
     }
 
+    /** Cheap hash of an array of objects (used to skip no-op re-renders). */
+    function shallowHash(arr) {
+        if (!arr || !arr.length) return '';
+        let h = arr.length + '|';
+        for (let i = 0; i < arr.length; i++) {
+            const p = arr[i];
+            h += (p.id || p.title || '') + ':' + (p.fromTime || '') + ':' + (p.toTime || '') + '|';
+        }
+        return h;
+    }
+
     function fetchSchedule() {
         if (state.isHidden) return;
         httpRequest({
@@ -493,16 +531,21 @@
             body: JSON.stringify({ Date: null }),
             onSuccess: function (resp) {
                 const programs = (resp && resp.data) || [];
+                const newHash = shallowHash(programs);
                 state.cachedSchedule = programs;
                 setCached('schedule', { programs: programs, date: getTodayKeyInTz(CAIRO_TZ) });
+                if (newHash === state.scheduleHash) {
+                    // Still need to refresh "current program" highlight because time moved
+                    reapplyCurrentHighlight(programs);
+                    return;
+                }
+                state.scheduleHash = newHash;
                 renderSchedule(programs);
             },
             onError: function (reason) {
                 log.warn('Schedule fetch failed:', reason);
-                // Try offline cache
                 const cached = getCached('schedule');
                 if (cached && cached.programs) {
-                    log.info('Using cached schedule');
                     state.cachedSchedule = cached.programs;
                     renderSchedule(cached.programs);
                     showInfo('تعذر الاتصال — يتم عرض بيانات محفوظة');
@@ -511,6 +554,29 @@
                 }
             }
         });
+    }
+
+    /** When data is unchanged but minute rolled over, just move the "active" class. */
+    function reapplyCurrentHighlight(programs) {
+        const nowMins = getCairoMinutesNow();
+        let currentIdx = -1;
+        for (let i = 0; i < programs.length; i++) {
+            const p = programs[i];
+            const fromMins = parseTimeToMinutes(p.fromTime);
+            const toMins = parseTimeToMinutes(p.toTime);
+            if (fromMins < 0 || toMins < 0) continue;
+            const isCurrent = toMins <= fromMins
+                ? (nowMins >= fromMins || nowMins < toMins)
+                : (nowMins >= fromMins && nowMins < toMins);
+            if (isCurrent) { currentIdx = i; break; }
+        }
+        if (currentIdx === state.currentProgramIdx) {
+            if (currentIdx >= 0) updateCurrentProgramProgress(programs[currentIdx]);
+            return;
+        }
+        state.currentProgramIdx = currentIdx;
+        // Rebuild to move the highlight
+        renderSchedule(programs);
     }
 
     /* ======================================================================
@@ -566,16 +632,12 @@
 
     function renderSkeletonPrayer() {
         let html = '';
-        for (let i = 0; i < 6; i++) {
-            html += '<div class="skeleton" style="width:75px;height:80px"></div>';
-        }
+        for (let i = 0; i < 6; i++) html += '<div class="skeleton skeleton-prayer-item"></div>';
         els.prayerGrid.innerHTML = html;
     }
 
     function renderPrayerError(message) {
-        els.prayerGrid.innerHTML =
-            '<div style="padding:20px;text-align:center;color:#8899aa;font-size:20px;width:100%">' +
-            escapeHtml(message) + '</div>';
+        els.prayerGrid.innerHTML = '<div class="error-msg error-msg-small">' + escapeHtml(message) + '</div>';
     }
 
     function renderPrayerGrid() {
@@ -698,44 +760,53 @@
         }
     }
 
+    /** Schedule midnight rollover: resets state and refreshes prayer times. */
+    function scheduleMidnightReset() {
+        const now = new Date();
+        const tomorrow = new Date(now);
+        tomorrow.setHours(24, 0, 0, 0);
+        const ms = tomorrow.getTime() - now.getTime() + 2000; // +2s safety margin
+        state.midnightTimer = setTimeout(function () {
+            dailyResetCheck();
+            fetchPrayerTimes();
+            fetchSchedule();
+            scheduleMidnightReset();
+        }, ms);
+    }
+
+    const AZAN_PRAYERS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+
     function checkAzanTime() {
         dailyResetCheck();
         if (!state.cachedPrayerData || state.azanPlaying) return;
         const nowObj = getLocationNowHM();
-        const azanPrayers = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+        const nowMins = nowObj.h * 60 + nowObj.m;
 
-        // Pre-azan notification
-        for (let i = 0; i < azanPrayers.length; i++) {
-            const key = azanPrayers[i];
-            if (state.preAzanShown[key]) continue;
-            if (!state.azanEnabledPerPrayer[key]) continue;
-            const timeStr = state.cachedPrayerData[key];
-            if (!timeStr) continue;
-            const parts = timeStr.split(':');
-            const pMins = parseInt(parts[0]) * 60 + parseInt(parts[1]);
-            const nowMins = nowObj.h * 60 + nowObj.m;
-            const diff = pMins - nowMins;
-            if (diff > 0 && diff <= PRE_AZAN_MINUTES) {
-                state.preAzanShown[key] = true;
-                showPreAzanBanner(key, diff);
-                break;
-            }
-        }
-
-        // Azan trigger
-        for (let i = 0; i < azanPrayers.length; i++) {
-            const key = azanPrayers[i];
-            if (state.azanTriggered[key]) continue;
-            if (!state.azanEnabledPerPrayer[key]) { state.azanTriggered[key] = true; continue; }
+        for (let i = 0; i < AZAN_PRAYERS.length; i++) {
+            const key = AZAN_PRAYERS[i];
+            const enabled = state.azanEnabledPerPrayer[key];
             const timeStr = state.cachedPrayerData[key];
             if (!timeStr) continue;
             const parts = timeStr.split(':');
             const pH = parseInt(parts[0]);
             const pM = parseInt(parts[1]);
-            if (nowObj.h === pH && nowObj.m === pM) {
-                state.azanTriggered[key] = true;
-                playAzan(key);
-                break;
+            const pMins = pH * 60 + pM;
+            const diff = pMins - nowMins;
+
+            // Pre-azan banner (5 minutes before)
+            if (enabled && !state.preAzanShown[key] && diff > 0 && diff <= PRE_AZAN_MINUTES) {
+                state.preAzanShown[key] = true;
+                showPreAzanBanner(key, diff);
+            }
+
+            // Exact azan minute
+            if (!state.azanTriggered[key]) {
+                if (!enabled) { state.azanTriggered[key] = true; continue; }
+                if (nowObj.h === pH && nowObj.m === pM) {
+                    state.azanTriggered[key] = true;
+                    playAzan(key);
+                    return;
+                }
             }
         }
     }
@@ -766,17 +837,8 @@
     function playAzan(prayerKey) {
         state.azanPlaying = true;
         state.wasPlayingBeforeAzan = state.playing;
-        if (state.playing) {
-            state.stoppingManually = true;
-            if (state.hls) { state.hls.destroy(); state.hls = null; }
-            state.audio.pause();
-            state.audio.src = '';
-            state.playing = false;
-            els.playBtn.classList.remove('playing');
-            els.btnIcon.className = 'icon-play';
-            setTimeout(function () { state.stoppingManually = false; }, 200);
-        }
-        els.status.textContent = 'الأذان - Paused for prayer';
+        if (state.playing) pauseRadioSilently();
+        els.status.textContent = STATUS.AZAN;
         els.status.className = 'status live';
 
         const prayerName = prayerNamesAr[prayerKey] || '';
@@ -936,35 +998,49 @@
     /* ======================================================================
        Clock + Next Salah (drift-corrected)
        ====================================================================== */
+    let lastClockText = '';
+    let lastNextSalahText = '';
+    let lastNextSalahPct = -1;
+
     function updateClock() {
         const hm = getLocationNowHM();
         const h = hm.h, m = hm.m, s = hm.s;
         const ampm = h >= 12 ? 'م' : 'ص';
         const h12 = h % 12 || 12;
-        const timeStr = h12 + ':' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s + ' ' + ampm;
-        els.currentTime.textContent = toArabicDigits(timeStr);
+        const clockText = toArabicDigits(
+            h12 + ':' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s + ' ' + ampm
+        );
+        if (clockText !== lastClockText) {
+            els.currentTime.textContent = clockText;
+            lastClockText = clockText;
+        }
 
-        if (state.cachedPrayerData) {
-            const nextKey = getNextPrayer(state.cachedPrayerData);
-            const timeStr2 = state.cachedPrayerData[nextKey];
-            if (timeStr2) {
-                const parts = timeStr2.split(':');
-                const prayerMins = parseInt(parts[0]) * 60 + parseInt(parts[1]);
-                const nowMins = h * 60 + m;
-                let diff = prayerMins - nowMins;
-                if (diff < 0) diff += 24 * 60;
-                const diffH = Math.floor(diff / 60);
-                const diffM = diff % 60;
-                let remaining = '';
-                if (diffH > 0) remaining = diffH + ' س ';
-                remaining += diffM + ' د';
-                els.nextSalahText.textContent = toArabicDigits('صلاة ' + prayerNamesAr[nextKey] + ' بعد ' + remaining);
+        // Next salah countdown only changes when the minute changes
+        if (s !== 0 && lastNextSalahText) return;
+        if (!state.cachedPrayerData) return;
 
-                // Visual bar - fill ratio based on time until prayer (max 3h window)
-                const maxWindow = 3 * 60;
-                const pct = Math.max(0, Math.min(100, (1 - diff / maxWindow) * 100));
-                els.nextSalahBarFill.style.width = pct + '%';
-            }
+        const nextKey = getNextPrayer(state.cachedPrayerData);
+        const timeStr = state.cachedPrayerData[nextKey];
+        if (!timeStr) return;
+        const parts = timeStr.split(':');
+        const prayerMins = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+        const nowMins = h * 60 + m;
+        let diff = prayerMins - nowMins;
+        if (diff < 0) diff += 24 * 60;
+        const diffH = Math.floor(diff / 60);
+        const diffM = diff % 60;
+        const remaining = (diffH > 0 ? diffH + ' س ' : '') + diffM + ' د';
+        const salahText = toArabicDigits('صلاة ' + prayerNamesAr[nextKey] + ' بعد ' + remaining);
+        if (salahText !== lastNextSalahText) {
+            els.nextSalahText.textContent = salahText;
+            lastNextSalahText = salahText;
+        }
+
+        const maxWindow = 3 * 60;
+        const pct = Math.max(0, Math.min(100, (1 - diff / maxWindow) * 100));
+        if (Math.abs(pct - lastNextSalahPct) > 0.5) {
+            els.nextSalahBarFill.style.width = pct + '%';
+            lastNextSalahPct = pct;
         }
     }
 
@@ -986,16 +1062,19 @@
         setFocus(0);
     }
 
+    /** Toggle .focused on a list of elements, setting index. */
+    function applyFocusClass(list, idx) {
+        for (let i = 0; i < list.length; i++) list[i].classList.remove('focused');
+        if (list[idx]) list[idx].classList.add('focused');
+    }
+
     function setFocus(idx) {
         if (state.dialogOpen || state.settingsOpen) return;
         if (idx < 0) idx = focusables.length - 1;
         if (idx >= focusables.length) idx = 0;
-        for (let i = 0; i < focusables.length; i++) {
-            focusables[i].classList.remove('focused');
-        }
         state.focusIndex = idx;
-        focusables[idx].classList.add('focused');
-        focusables[idx].focus();
+        applyFocusClass(focusables, idx);
+        if (focusables[idx]) focusables[idx].focus();
     }
 
     function moveFocus(delta) {
@@ -1028,10 +1107,7 @@
     }
 
     function updateDialogFocus() {
-        for (let i = 0; i < dialogButtons.length; i++) {
-            dialogButtons[i].classList.remove('focused');
-        }
-        if (dialogButtons[dialogFocusIdx]) dialogButtons[dialogFocusIdx].classList.add('focused');
+        applyFocusClass(dialogButtons, dialogFocusIdx);
     }
 
     function confirmExit() {
@@ -1191,11 +1267,8 @@
 
     function updateSettingsFocus() {
         const list = getSettingsFocusables();
-        for (let i = 0; i < list.length; i++) list[i].classList.remove('focused');
-        if (list[settingsFocusIdx]) {
-            list[settingsFocusIdx].classList.add('focused');
-            list[settingsFocusIdx].scrollIntoView({ block: 'nearest' });
-        }
+        applyFocusClass(list, settingsFocusIdx);
+        if (list[settingsFocusIdx]) list[settingsFocusIdx].scrollIntoView({ block: 'nearest' });
     }
 
     function moveSettingsFocus(delta) {
@@ -1402,11 +1475,11 @@
         // Initialize audio
         state.audio = document.createElement('audio');
         state.audio.addEventListener('playing', function () {
-            els.status.textContent = 'Live';
+            els.status.textContent = STATUS.LIVE;
             els.status.className = 'status live';
         });
         state.audio.addEventListener('waiting', function () {
-            els.status.textContent = 'Buffering...';
+            els.status.textContent = STATUS.BUFFERING;
             els.status.className = 'status';
         });
         state.audio.addEventListener('error', function () {
@@ -1426,7 +1499,7 @@
                 '<span style="font-size:26px;color:#ffe6e0">اللهم رب هذه الدعوة التامة - الشيخ الشعراوي</span>';
             els.azanOverlay.style.display = 'flex';
             setBackdrop(true);
-            els.status.textContent = 'الدعاء بعد الأذان';
+            els.status.textContent = STATUS.DUA;
             els.status.className = 'status live';
             state.duaAudio.currentTime = 0;
             // Match azan volume for consistency
@@ -1436,31 +1509,8 @@
             handlePlayPromise(state.duaAudio.play());
         });
 
-        // After dua ends, hide overlay and resume radio
-        state.duaAudio.addEventListener('ended', function () {
-            state.azanPlaying = false;
-            els.azanOverlay.style.display = 'none';
-            setBackdrop(false);
-            if (state.wasPlayingBeforeAzan) {
-                startPlayback(STREAM_URL, 0);
-            } else {
-                els.status.textContent = 'Press to play';
-                els.status.className = 'status';
-            }
-        });
-
-        state.duaAudio.addEventListener('error', function () {
-            // If dua fails, just resume as if azan ended normally
-            state.azanPlaying = false;
-            els.azanOverlay.style.display = 'none';
-            setBackdrop(false);
-            if (state.wasPlayingBeforeAzan) {
-                startPlayback(STREAM_URL, 0);
-            } else {
-                els.status.textContent = 'Press to play';
-                els.status.className = 'status';
-            }
-        });
+        state.duaAudio.addEventListener('ended', resumeAfterAzan);
+        state.duaAudio.addEventListener('error', resumeAfterAzan);
 
         // Restore persisted state
         const saved = loadState();
@@ -1522,22 +1572,11 @@
 
         // Timers (tracked for cleanup)
         state.intervals.push(setInterval(fetchSchedule, SCHEDULE_POLL_MS));
-        state.intervals.push(setInterval(fetchPrayerTimes, PRAYER_POLL_MS));
         state.intervals.push(setInterval(checkAzanTime, AZAN_CHECK_MS));
-        state.intervals.push(setInterval(dailyResetCheck, DAILY_RESET_MS));
+        scheduleMidnightReset(); // Fires once at next midnight (Cairo TZ), reschedules itself
         state.intervals.push(setInterval(function () {
-            // Program progress updates
-            if (!state.cachedSchedule) return;
-            const nowMins = getCairoMinutesNow();
-            for (let i = 0; i < state.cachedSchedule.length; i++) {
-                const p = state.cachedSchedule[i];
-                const fromMins = parseTimeToMinutes(p.fromTime);
-                const toMins = parseTimeToMinutes(p.toTime);
-                if (fromMins < 0 || toMins < 0) continue;
-                const isCurrent = toMins <= fromMins
-                    ? (nowMins >= fromMins || nowMins < toMins)
-                    : (nowMins >= fromMins && nowMins < toMins);
-                if (isCurrent) { updateCurrentProgramProgress(p); break; }
+            if (state.currentProgramIdx >= 0 && state.cachedSchedule) {
+                updateCurrentProgramProgress(state.cachedSchedule[state.currentProgramIdx]);
             }
         }, PROGRESS_UPDATE_MS));
 
