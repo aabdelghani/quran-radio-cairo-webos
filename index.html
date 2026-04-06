@@ -8,6 +8,12 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-text">إذاعة القرآن الكريم من القاهرة</div>
+        <div class="loading-dots">جاري التحميل ...</div>
+    </div>
+
     <!-- Hidden keep-alive video (prevents webOS screen saver while audio plays) -->
     <video id="keepAliveVideo" src="keep_alive.mp4" muted loop playsinline
         style="position:fixed;bottom:0;left:0;width:2px;height:2px;opacity:0.01;pointer-events:none;z-index:-1"

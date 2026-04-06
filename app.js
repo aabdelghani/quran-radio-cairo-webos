@@ -1588,6 +1588,16 @@
             if (!state.playing && !state.azanPlaying) togglePlayback();
         }, 1500);
 
+        // Dismiss loading overlay after data starts arriving
+        function dismissLoading() {
+            const overlay = $('loadingOverlay');
+            if (overlay) {
+                overlay.classList.add('hidden');
+                setTimeout(function () { overlay.style.display = 'none'; }, 600);
+            }
+        }
+        setTimeout(dismissLoading, 4000);
+
         log.info('App initialized');
     }
 
