@@ -67,10 +67,10 @@
 
     // UI status strings (deduplicated)
     const STATUS = {
-        READY: 'Press to play',
-        CONNECTING: 'Connecting...',
-        BUFFERING: 'Buffering...',
-        LIVE: 'Live',
+        READY: 'اضغط للتشغيل',
+        CONNECTING: '...جاري الاتصال',
+        BUFFERING: '...جاري التحميل',
+        LIVE: 'بث مباشر',
         AZAN: 'الأذان - Paused for prayer',
         DUA: 'الدعاء بعد الأذان',
         STREAM_ERROR: 'خطأ في البث - اضغط للمحاولة'
