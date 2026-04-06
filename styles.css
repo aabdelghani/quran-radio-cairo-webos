@@ -225,7 +225,7 @@ button:focus {
 }
 .prayer-tz-label {
     direction: rtl;
-    font-size: 18px;
+    font-size: 20px;
     color: #556677;
     margin-bottom: 8px;
     text-align: center;
@@ -379,7 +379,7 @@ button:focus {
     line-height: 1.5;
 }
 .toast .toast-body-en {
-    font-size: 16px;
+    font-size: 20px;
     color: #8899aa;
     margin-top: 8px;
     direction: ltr;
@@ -695,7 +695,7 @@ button:focus {
     right: 0;
     height: 60px;
     padding: 18px 40px;
-    font-size: 18px;
+    font-size: 20px;
     color: #445566;
     direction: rtl;
     display: flex;

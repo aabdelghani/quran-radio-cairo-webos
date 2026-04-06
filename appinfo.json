@@ -7,5 +7,6 @@
   "title": "Quran Radio Cairo",
   "icon": "icon.png",
   "largeIcon": "largeIcon.png",
-  "bgColor": "#0f1e38"
+  "bgColor": "#0f1e38",
+  "splashBackground": "splash.png"
 }
